@@ -960,7 +960,7 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
 
         let unchecked = if let &&AccountTyExpr::UncheckedAccount = ty_expr {
             Some(quote! {
-                #[doc="CHECK: This account is unchecked."]
+                /// CHECK: This account is unchecked.
             })
         } else {
             None
@@ -1644,7 +1644,7 @@ fn make_lib(
 
             #[derive(Clone, Debug)]
             pub struct CpiAccount<'info> {
-                #[doc="CHECK: CpiAccounts temporarily store AccountInfos."]
+                /// CHECK: CpiAccounts temporarily store AccountInfos.
                 pub account_info: AccountInfo<'info>,
                 pub is_writable: bool,
                 pub is_signer: bool,
@@ -1820,6 +1820,10 @@ fn beautify_impl(tokens: TokenStream) -> CResult<String> {
     // Collapse any accidental doubled blank lines
     let re = Regex::new(r"\n\n\n+").unwrap();
     source = re.replace_all(&source, "\n\n").to_string();
+
+    // Convert #[doc = "CHECK: ..."] back to /// CHECK: ...
+    let re = Regex::new(r#"#\[doc = r" CHECK: (.*?)"\]"#).unwrap();
+    source = re.replace_all(&source, "/// CHECK: $1").to_string();
 
     return Ok(source);
 }
