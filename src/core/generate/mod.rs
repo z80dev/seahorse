@@ -1851,7 +1851,7 @@ fn beautify_impl(tokens: TokenStream) -> CResult<String> {
     source = re.replace_all(&source, ".").to_string();
 
     // Remove spaces between a word and (), i.e. fn calls
-    let re = Regex::new(r"(\w|)>*\s*\(").unwrap();
+    let re = Regex::new(r"(.*)+\s*\(").unwrap();
     source = re.replace_all(&source, "$1(").to_string();
 
     Ok(source)
