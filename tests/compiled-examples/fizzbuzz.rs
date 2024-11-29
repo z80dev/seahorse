@@ -63,25 +63,25 @@ pub struct LoadedFizzBuzz<'info, 'entrypoint> {
     pub n: u64,
 }
 
-pub fn do_fizzbuzz_handler<'info(
+pub fn do_fizzbuzz_handler<'info>(
     mut fizzbuzz: Mutable<LoadedFizzBuzz<'info, '_>>,
     mut n: u64,
-) -() {
-    assign!(fizzbuzz.borrow_mut().fizz,(n % 3) == 0);
+) -> () {
+    assign!(fizzbuzz.borrow_mut().fizz, (n % 3) == 0);
 
-    assign!(fizzbuzz.borrow_mut().buzz,(n % 5) == 0);
+    assign!(fizzbuzz.borrow_mut().buzz, (n % 5) == 0);
 
-    if(!fizzbuzz.borrow().fizz) &&(!fizzbuzz.borrow().buzz) {
+    if (!fizzbuzz.borrow().fizz) && (!fizzbuzz.borrow().buzz) {
         assign!(fizzbuzz.borrow_mut().n, n);
     } else {
         assign!(fizzbuzz.borrow_mut().n, 0);
     }
 }
 
-pub fn init_handler<'info(
+pub fn init_handler<'info>(
     mut owner: SeahorseSigner<'info, '_>,
     mut fizzbuzz: Empty<Mutable<LoadedFizzBuzz<'info, '_>>>,
-) -() {
+) -> () {
     fizzbuzz.account.clone();
 }
 
@@ -112,7 +112,7 @@ pub mod seahorse_util {
         ops::{Deref, Index, IndexMut},
     };
 
-    pub struct Mutable<T(Rc<RefCell<T>>);
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
     impl<T> Mutable<T> {
         pub fn new(obj: T) -> Self {
@@ -215,7 +215,7 @@ pub mod seahorse_util {
     }
 
     #[derive(Clone, Debug)]
-    pub struct ProgramsMap<'info(pub HashMap<&'static str, AccountInfo<'info>>);
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
     impl<'info> ProgramsMap<'info> {
         pub fn get(&self, name: &'static str) -> AccountInfo<'info> {
@@ -330,7 +330,7 @@ mod fizzbuzz {
     pub struct Init<'info> {
         #[account(mut)]
         pub owner: Signer<'info>,
-        #[account(init, space = std::mem::size_of::< dot::program::FizzBuzz () + 8, payer = owner, seeds = ["fizzbuzz".as_bytes().as_ref(), owner.key().as_ref()], bump)]
+        #[account(init, space = std::mem::size_of::<dot::program::FizzBuzz> () + 8, payer = owner, seeds = ["fizzbuzz".as_bytes ().as_ref (), owner.key ().as_ref ()], bump)]
         pub fizzbuzz: Box<Account<'info, dot::program::FizzBuzz>>,
         pub rent: Sysvar<'info, Rent>,
         pub system_program: Program<'info, System>,

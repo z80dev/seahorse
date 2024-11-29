@@ -82,11 +82,11 @@ pub struct LoadedUser<'info, 'entrypoint> {
     pub data: u8,
 }
 
-pub fn ix_handler<'info(
+pub fn ix_handler<'info>(
     mut payer: SeahorseSigner<'info, '_>,
     mut user: Mutable<LoadedUser<'info, '_>>,
     mut another: Empty<Mutable<LoadedAnother<'info, '_>>>,
-) -() {
+) -> () {
     let mut a = another.account.clone();
 
     solana_program::msg!("{:?}", user.borrow().__account__.key());
@@ -121,7 +121,7 @@ pub mod seahorse_util {
         ops::{Deref, Index, IndexMut},
     };
 
-    pub struct Mutable<T(Rc<RefCell<T>>);
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
     impl<T> Mutable<T> {
         pub fn new(obj: T) -> Self {
@@ -224,7 +224,7 @@ pub mod seahorse_util {
     }
 
     #[derive(Clone, Debug)]
-    pub struct ProgramsMap<'info(pub HashMap<&'static str, AccountInfo<'info>>);
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
     impl<'info> ProgramsMap<'info> {
         pub fn get(&self, name: &'static str) -> AccountInfo<'info> {
@@ -322,7 +322,7 @@ mod account_key {
         pub payer: Signer<'info>,
         #[account(mut)]
         pub user: Box<Account<'info, dot::program::User>>,
-        #[account(init, space = std::mem::size_of::< dot::program::Another () + 8, payer = payer, seeds = [user.key().as_ref()], bump)]
+        #[account(init, space = std::mem::size_of::<dot::program::Another> () + 8, payer = payer, seeds = [user.key ().as_ref ()], bump)]
         pub another: Box<Account<'info, dot::program::Another>>,
         pub rent: Sysvar<'info, Rent>,
         pub system_program: Program<'info, System>,

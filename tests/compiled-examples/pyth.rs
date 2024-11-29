@@ -12,7 +12,7 @@ use anchor_lang::{prelude::*, solana_program};
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use std::{cell::RefCell, rc::Rc};
 
-pub fn use_sol_usd_price_handler<'info(mut price_account: UncheckedAccount<'info>) -() {
+pub fn use_sol_usd_price_handler<'info>(mut price_account: UncheckedAccount<'info>) -> () {
     let mut price_feed = {
         if price_account.key()
             != Pubkey::new_from_array([
@@ -64,7 +64,7 @@ pub mod seahorse_util {
         ops::{Deref, Index, IndexMut},
     };
 
-    pub struct Mutable<T(Rc<RefCell<T>>);
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
     impl<T> Mutable<T> {
         pub fn new(obj: T) -> Self {
@@ -167,7 +167,7 @@ pub mod seahorse_util {
     }
 
     #[derive(Clone, Debug)]
-    pub struct ProgramsMap<'info(pub HashMap<&'static str, AccountInfo<'info>>);
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
     impl<'info> ProgramsMap<'info> {
         pub fn get(&self, name: &'static str) -> AccountInfo<'info> {

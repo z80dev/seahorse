@@ -47,11 +47,11 @@ pub struct LoadedHello<'info, 'entrypoint> {
     pub bump: u8,
 }
 
-pub fn init_handler<'info(
+pub fn init_handler<'info>(
     mut owner: SeahorseSigner<'info, '_>,
     mut hello: Empty<Mutable<LoadedHello<'info, '_>>>,
     mut mint: Empty<SeahorseAccount<'info, '_, Mint>>,
-) -() {
+) -> () {
     let mut bump = hello.bump.unwrap();
     let mut hello = hello.account.clone();
 
@@ -60,11 +60,11 @@ pub fn init_handler<'info(
     assign!(hello.borrow_mut().bump, bump);
 }
 
-pub fn say_hello_handler<'info(
+pub fn say_hello_handler<'info>(
     mut user_acc: SeahorseAccount<'info, '_, TokenAccount>,
     mut hello: Mutable<LoadedHello<'info, '_>>,
     mut mint: SeahorseAccount<'info, '_, Mint>,
-) -() {
+) -> () {
     let mut bump = hello.borrow().bump;
 
     solana_program::msg!("{}", format!("Hello {:?}, have a token!", user_acc.owner));
@@ -116,7 +116,7 @@ pub mod seahorse_util {
         ops::{Deref, Index, IndexMut},
     };
 
-    pub struct Mutable<T(Rc<RefCell<T>>);
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
     impl<T> Mutable<T> {
         pub fn new(obj: T) -> Self {
@@ -219,7 +219,7 @@ pub mod seahorse_util {
     }
 
     #[derive(Clone, Debug)]
-    pub struct ProgramsMap<'info(pub HashMap<&'static str, AccountInfo<'info>>);
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
     impl<'info> ProgramsMap<'info> {
         pub fn get(&self, name: &'static str) -> AccountInfo<'info> {
@@ -315,9 +315,9 @@ mod hello {
     pub struct Init<'info> {
         #[account(mut)]
         pub owner: Signer<'info>,
-        #[account(init, space = std::mem::size_of::< dot::program::Hello () + 8, payer = owner, seeds = ["hello".as_bytes().as_ref()], bump)]
+        #[account(init, space = std::mem::size_of::<dot::program::Hello> () + 8, payer = owner, seeds = ["hello".as_bytes ().as_ref ()], bump)]
         pub hello: Box<Account<'info, dot::program::Hello>>,
-        #[account(init, payer = owner, seeds = ["hello-mint".as_bytes().as_ref()], bump, mint::decimals = 0, mint::authority = hello)]
+        #[account(init, payer = owner, seeds = ["hello-mint".as_bytes ().as_ref ()], bump, mint::decimals = 0, mint::authority = hello)]
         pub mint: Box<Account<'info, Mint>>,
         pub rent: Sysvar<'info, Rent>,
         pub system_program: Program<'info, System>,

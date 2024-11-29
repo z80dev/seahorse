@@ -69,12 +69,12 @@ impl Default for Operation {
     }
 }
 
-pub fn do_operation_handler<'info(
+pub fn do_operation_handler<'info>(
     mut owner: SeahorseSigner<'info, '_>,
     mut calculator: Mutable<LoadedCalculator<'info, '_>>,
     mut op: Operation,
     mut num: i64,
-) -() {
+) -> () {
     if !(owner.key() == calculator.borrow().owner) {
         panic!("This is not your calculator!");
     }
@@ -108,19 +108,19 @@ pub fn do_operation_handler<'info(
     }
 }
 
-pub fn init_calculator_handler<'info(
+pub fn init_calculator_handler<'info>(
     mut owner: SeahorseSigner<'info, '_>,
     mut calculator: Empty<Mutable<LoadedCalculator<'info, '_>>>,
-) -() {
+) -> () {
     let mut calculator = calculator.account.clone();
 
     assign!(calculator.borrow_mut().owner, owner.key());
 }
 
-pub fn reset_calculator_handler<'info(
+pub fn reset_calculator_handler<'info>(
     mut owner: SeahorseSigner<'info, '_>,
     mut calculator: Mutable<LoadedCalculator<'info, '_>>,
-) -() {
+) -> () {
     solana_program::msg!(
         "{:?} {} {:?}",
         owner.key(),
@@ -162,7 +162,7 @@ pub mod seahorse_util {
         ops::{Deref, Index, IndexMut},
     };
 
-    pub struct Mutable<T(Rc<RefCell<T>>);
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
     impl<T> Mutable<T> {
         pub fn new(obj: T) -> Self {
@@ -265,7 +265,7 @@ pub mod seahorse_util {
     }
 
     #[derive(Clone, Debug)]
-    pub struct ProgramsMap<'info(pub HashMap<&'static str, AccountInfo<'info>>);
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
     impl<'info> ProgramsMap<'info> {
         pub fn get(&self, name: &'static str) -> AccountInfo<'info> {
@@ -388,7 +388,7 @@ mod calculator {
     pub struct InitCalculator<'info> {
         #[account(mut)]
         pub owner: Signer<'info>,
-        #[account(init, space = std::mem::size_of::< dot::program::Calculator () + 8, payer = owner, seeds = ["Calculator".as_bytes().as_ref(), owner.key().as_ref()], bump)]
+        #[account(init, space = std::mem::size_of::<dot::program::Calculator> () + 8, payer = owner, seeds = ["Calculator".as_bytes ().as_ref (), owner.key ().as_ref ()], bump)]
         pub calculator: Box<Account<'info, dot::program::Calculator>>,
         pub rent: Sysvar<'info, Rent>,
         pub system_program: Program<'info, System>,

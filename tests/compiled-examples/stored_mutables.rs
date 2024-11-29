@@ -180,7 +180,7 @@ pub struct LoadedDeep {
 }
 
 impl Mutable<LoadedDeep> {
-    pub fn __init__(&self, mut num: i32) -() {
+    pub fn __init__(&self, mut num: i32) -> () {
         assign!(self.borrow_mut().num, num);
     }
 }
@@ -280,14 +280,14 @@ pub struct LoadedNested {
 }
 
 impl Mutable<LoadedNested> {
-    pub fn __init__(&self, mut num: i32) -() {
+    pub fn __init__(&self, mut num: i32) -> () {
         assign!(
             self.borrow_mut().deep,
             <Loaded!(Deep)>::__new__(num.clone())
         );
     }
 
-    pub fn reset(&self) -() {
+    pub fn reset(&self) -> () {
         assign!(self.borrow_mut().deep, <Loaded!(Deep)>::__new__(0));
     }
 }
@@ -318,10 +318,10 @@ impl Loadable for Nested {
     }
 }
 
-pub fn init_handler<'info(
+pub fn init_handler<'info>(
     mut signer: SeahorseSigner<'info, '_>,
     mut data: Empty<Mutable<LoadedData<'info, '_>>>,
-) -() {
+) -> () {
     let mut init_data = data.account.clone();
 
     assign!(init_data.borrow_mut().int_list, Mutable::new(vec![1, 2]));
@@ -349,10 +349,10 @@ pub fn init_handler<'info(
     );
 }
 
-pub fn test_stored_mutables_handler<'info(
+pub fn test_stored_mutables_handler<'info>(
     mut signer: SeahorseSigner<'info, '_>,
     mut data: Mutable<LoadedData<'info, '_>>,
-) -() {
+) -> () {
     assign!((*(*data
             .borrow_mut()
             .array_2d
@@ -420,7 +420,7 @@ pub struct LoadedMoreData {
 }
 
 impl Mutable<LoadedMoreData> {
-    pub fn __init__(&self, mut num: i32) -() {
+    pub fn __init__(&self, mut num: i32) -> () {
         assign!(self.borrow_mut().num, num);
     }
 }
@@ -474,7 +474,7 @@ pub mod seahorse_util {
         ops::{Deref, Index, IndexMut},
     };
 
-    pub struct Mutable<T(Rc<RefCell<T>>);
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
     impl<T> Mutable<T> {
         pub fn new(obj: T) -> Self {
@@ -577,7 +577,7 @@ pub mod seahorse_util {
     }
 
     #[derive(Clone, Debug)]
-    pub struct ProgramsMap<'info(pub HashMap<&'static str, AccountInfo<'info>>);
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
     impl<'info> ProgramsMap<'info> {
         pub fn get(&self, name: &'static str) -> AccountInfo<'info> {
@@ -673,7 +673,7 @@ mod stored_mutables {
     pub struct Init<'info> {
         #[account(mut)]
         pub signer: Signer<'info>,
-        #[account(init, space = std::mem::size_of::< dot::program::Data () + 8 +(1024 as usize), payer = signer, seeds = [signer.key().as_ref()], bump)]
+        #[account(init, space = std::mem::size_of::<dot::program::Data> () + 8 + (1024 as usize), payer = signer, seeds = [signer.key ().as_ref ()], bump)]
         pub data: Box<Account<'info, dot::program::Data>>,
         pub rent: Sysvar<'info, Rent>,
         pub system_program: Program<'info, System>,

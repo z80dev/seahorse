@@ -14,13 +14,13 @@ use std::{cell::RefCell, rc::Rc};
 
 seahorse_const! { MAX, 7 }
 
-seahorse_const! { MESSAGE, "Hello constants".to_string() }
+seahorse_const! { MESSAGE, "Hello constants".to_string () }
 
 seahorse_const! { MIN, 2 }
 
-seahorse_const! { RANGE,(MAX !() - MIN !()) }
+seahorse_const! { RANGE, (MAX ! () - MIN ! ()) }
 
-pub fn use_constants_handler<'info(mut signer: SeahorseSigner<'info, '_>) -() {
+pub fn use_constants_handler<'info>(mut signer: SeahorseSigner<'info, '_>) -> () {
     solana_program::msg!("{}", MESSAGE!());
 
     for mut i in MIN!()..MAX!() {
@@ -57,7 +57,7 @@ pub mod seahorse_util {
         ops::{Deref, Index, IndexMut},
     };
 
-    pub struct Mutable<T(Rc<RefCell<T>>);
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
     impl<T> Mutable<T> {
         pub fn new(obj: T) -> Self {
@@ -160,7 +160,7 @@ pub mod seahorse_util {
     }
 
     #[derive(Clone, Debug)]
-    pub struct ProgramsMap<'info(pub HashMap<&'static str, AccountInfo<'info>>);
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
     impl<'info> ProgramsMap<'info> {
         pub fn get(&self, name: &'static str) -> AccountInfo<'info> {

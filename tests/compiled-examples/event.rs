@@ -66,11 +66,11 @@ impl Loadable for HelloEvent {
     }
 }
 
-pub fn send_event_handler<'info(
+pub fn send_event_handler<'info>(
     mut sender: SeahorseSigner<'info, '_>,
     mut data: u8,
     mut title: String,
-) -() {
+) -> () {
     let mut event = <Loaded!(HelloEvent)>::__new__(data.clone(), title.clone(), sender.key());
 
     event.__emit__();
@@ -103,7 +103,7 @@ pub mod seahorse_util {
         ops::{Deref, Index, IndexMut},
     };
 
-    pub struct Mutable<T(Rc<RefCell<T>>);
+    pub struct Mutable<T>(Rc<RefCell<T>>);
 
     impl<T> Mutable<T> {
         pub fn new(obj: T) -> Self {
@@ -206,7 +206,7 @@ pub mod seahorse_util {
     }
 
     #[derive(Clone, Debug)]
-    pub struct ProgramsMap<'info(pub HashMap<&'static str, AccountInfo<'info>>);
+    pub struct ProgramsMap<'info>(pub HashMap<&'static str, AccountInfo<'info>>);
 
     impl<'info> ProgramsMap<'info> {
         pub fn get(&self, name: &'static str) -> AccountInfo<'info> {
