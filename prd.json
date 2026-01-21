@@ -252,8 +252,8 @@
         "Typecheck passes"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/init_patterns.py. Reference at tests/anchor-reference/init_patterns_anchor/. Demonstrates SimpleData (primitives: u8, u16, u32, u64, i64), StringData (strings with padding), ArrayData (fixed-size arrays), ComplexData (nested struct Stats). Note: Seahorse doesn't support init_if_needed - only Empty[T].init(). Space calculation via padding parameter for variable-length data. 17 LiteSVM integration tests, 4 parity tests. All tests verify rent exemption and space calculation."
     },
     {
       "id": "US-015",

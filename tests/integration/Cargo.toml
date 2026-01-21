@@ -54,3 +54,7 @@ path = "calculator_integration.rs"
 [[test]]
 name = "pda_patterns_integration"
 path = "pda_patterns_integration.rs"
+
+[[test]]
+name = "init_patterns_integration"
+path = "init_patterns_integration.rs"

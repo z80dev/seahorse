@@ -306,3 +306,33 @@
   - String serialization in Borsh: 4-byte length prefix (u32 LE) + UTF-8 bytes
 ---
 
+## 2026-01-21 - US-014
+- Implemented Account initialization patterns with full test suite
+- Files changed:
+  - examples/init_patterns.py (new Seahorse init patterns)
+  - tests/anchor-reference/init_patterns_anchor/ (Anchor reference program)
+  - tests/integration/init_patterns_integration.rs (17 LiteSVM integration tests)
+  - tests/common/init_patterns_parity.rs (4 behavior parity tests)
+  - tests/compiled-examples/init_patterns.rs (compiled Seahorse output)
+- Init patterns demonstrated:
+  - SimpleData: Primitives (u8, u16, u32, u64, i64) with explicit space calculation
+  - StringData: Variable-length strings with padding parameter for dynamic allocation
+  - ArrayData: Fixed-size arrays [u64; 4] and [bool; 8]
+  - ComplexData: Nested struct (Stats with count, total, average)
+  - Space verification tests confirm calculated sizes match allocated
+  - Rent exemption verified for all account types
+- Account sizes:
+  - SimpleData: 64 bytes (disc:8 + owner:32 + u8:1 + u16:2 + u32:4 + u64:8 + i64:8 + bump:1)
+  - ArrayData: 81 bytes (disc:8 + owner:32 + [u64;4]:32 + [bool;8]:8 + bump:1)
+  - ComplexData: 66 bytes (disc:8 + owner:32 + Stats:24 + bool:1 + bump:1)
+  - StringData: variable with padding=200 for name(32) + description(128)
+- **Learnings for future iterations:**
+  - Seahorse doesn't support init_if_needed - only Empty[T].init() for new accounts
+  - Use `padding=N` parameter in init() for variable-length data (strings, lists)
+  - Arrays cannot be assigned directly in Seahorse - must initialize element by element
+  - Nested struct initialization: `data.stats = Stats(count, u64(0), u64(0))`
+  - Seahorse doesn't support docstrings in class definitions - use # comments above class
+  - Boolean negation uses `not data.is_active` not `!data.is_active`
+  - Integer division uses `//` operator in Python (not `/`)
+---
+
