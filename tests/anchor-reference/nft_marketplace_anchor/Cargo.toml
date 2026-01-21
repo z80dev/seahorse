@@ -1,0 +1,23 @@
+[package]
+name = "nft-marketplace-anchor"
+version = "0.1.0"
+description = "NFT marketplace for listing and purchasing NFTs"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "nft_marketplace_anchor"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.32.0"
+anchor-spl = "0.32.0"
+
+# Pin blake3 to avoid edition 2024 requirement
+blake3 = "=1.8.2"
