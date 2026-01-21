@@ -1236,3 +1236,86 @@
   - Original event.py preserved as minimal example, events.py is comprehensive
   - Program ID must be valid base58 decoding to 32 bytes
 ---
+
+## 2026-01-21 - US-040
+- Implemented comprehensive error handling patterns in Seahorse
+- Files changed:
+  - examples/errors.py (new) - Error handling patterns example
+  - tests/compiled-examples/errors.rs (new) - Compiled Rust output
+  - tests/anchor-reference/errors_anchor/src/lib.rs (new) - Anchor reference implementation
+  - tests/anchor-reference/errors_anchor/Cargo.toml (new)
+  - tests/integration/errors_integration.rs (new) - 36 integration tests
+  - tests/integration/Cargo.toml (modified) - Added errors_integration test
+  - tests/common/errors_parity.rs (new) - 13 parity tests
+  - tests/common/Cargo.toml (modified) - Added errors_parity test
+  - prd.json (updated US-040 status to passes: true)
+- Key finding: Seahorse uses Python assert statements for error handling
+  - assert condition, 'error message' compiles to Anchor's if !(condition) { panic!("error message") }
+  - Not the same as Anchor's #[error_code] enum + require! macro pattern
+  - Seahorse error messages appear in program logs, not as typed error codes
+- Seahorse errors.py features:
+  - ErrorDemo account: authority, value, operation_count, is_active, name (String), max_value, bump
+  - RoleRegistry account: admin, operator, has_operator, registry_id, bump
+  - Error patterns demonstrated:
+    - Initialization validation: max_value > 0, max_value <= 1_000_000, name not empty, name <= 32 chars
+    - Authorization checks: authority.key() == error_demo.authority
+    - State validation: error_demo.is_active checks
+    - Numeric validation: value <= max_value, overflow/underflow protection
+    - Role-based access: admin-only, operator-or-admin
+    - Conditional validation: require_high_value flag for dynamic constraint
+- Instructions implemented:
+  - initialize: Creates ErrorDemo with validations
+  - set_value: Sets value with auth and range check
+  - increment_value: Adds with overflow protection
+  - decrement_value: Subtracts with underflow protection
+  - update_name: Updates name with string validation
+  - deactivate / reactivate: State transitions with is_active checks
+  - initialize_role_registry: Creates RoleRegistry with admin
+  - set_operator: Admin sets operator (admin-only)
+  - admin_only_action: Requires admin role
+  - operator_action: Requires admin OR operator role
+  - complex_validation: Multiple sequential checks including conditional high_value
+  - get_demo_info: Logs account state (read-only)
+- Anchor reference errors_anchor implements same pattern with #[error_code] enum
+  - 16 typed error codes (ValueMustBeGreaterThanZero, MaxValueExceedsLimit, etc.)
+  - Uses require! macro for clean error handling
+  - Error codes are typed and queryable (unlike Seahorse panic messages)
+- Bug fixes during implementation:
+  - Float division error: Changed `max_value / 2` to `max_value // 2` (integer division)
+  - Moved value error: Reordered print statements before assignments in errors.py
+  - AccountSysvarMismatch: Seahorse-generated init contexts require rent sysvar
+  - ConstraintMut: Seahorse marks registry accounts as #[account(mut)], tests need writable_meta()
+- Test coverage:
+  - Integration (36 tests): All pass
+    - initialize (success, max_value zero/exceeds, name empty/too long)
+    - set_value (success, unauthorized, exceeds max, inactive)
+    - increment_value (success, zero amount, overflow, would exceed max)
+    - decrement_value (success, zero amount, underflow)
+    - update_name (success, unauthorized, empty, too long, inactive)
+    - deactivate (success, unauthorized, already deactivated)
+    - reactivate (success, unauthorized, already active)
+    - initialize_role_registry (success, different ID)
+    - set_operator (success, unauthorized)
+    - admin_only_action (admin success, unauthorized)
+    - operator_action (admin success, operator success, unauthorized, no operator)
+    - complex_validation (success, high_value_not_met)
+    - get_demo_info, full_error_demo_workflow, pda_derivation_deterministic
+  - Parity (13 tests): All pass
+    - Account discriminators (ErrorDemo, RoleRegistry)
+    - Instruction discriminators (13 instructions)
+    - PDA derivation for both account types
+    - Account state layouts with field offsets
+    - Error categories documentation
+    - Seahorse assert pattern documentation
+    - Validation rules (max_value, name_length, role_based_access)
+- **Learnings for future iterations:**
+  - Seahorse assert statements compile to panic!() - not Anchor error codes
+  - Seahorse-generated init contexts require rent sysvar (add readonly_meta(rent::id()))
+  - Use integer division (//) not float division (/) in Seahorse Python
+  - Print statements must come BEFORE variable assignments to avoid Rust move errors
+  - Seahorse marks accounts as #[account(mut)] by default - tests must use writable_meta()
+  - Role-based access: check caller against stored admin/operator pubkeys
+  - Conditional validation: use if flag: assert condition, 'message' pattern
+  - ErrorDemo layout: disc(8) + authority(32) + value(8) + operation_count(8) + is_active(1) + name(4+var) + max_value(8) + bump(1)
+  - RoleRegistry layout: disc(8) + admin(32) + operator(32) + has_operator(1) + registry_id(8) + bump(1) = 82 bytes
+---

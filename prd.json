@@ -708,8 +708,8 @@
         "Typecheck passes"
       ],
       "priority": 41,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/errors.py. Reference at tests/anchor-reference/errors_anchor/. Demonstrates custom error handling patterns: authorization checks (authority, admin, operator roles), numeric validation (range, overflow, underflow), string validation (empty, max length), state transition validation (active/inactive), role-based access control (RoleRegistry with admin/operator). Seahorse uses Python assert statements which compile to Anchor's require! macro pattern. Key learnings: Seahorse-generated init contexts require rent sysvar, use integer division (//) not float division (/), print statements must come before value assignments to avoid move errors. 36 LiteSVM integration tests, 13 parity tests covering account/instruction discriminators, PDA derivation, and validation rules."
     },
     {
       "id": "US-041",
