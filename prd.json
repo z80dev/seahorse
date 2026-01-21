@@ -481,8 +481,8 @@
         "Typecheck passes"
       ],
       "priority": 28,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/nft_mint.py. Reference at tests/anchor-reference/nft_mint_anchor/. NOTE: Seahorse doesn't have native Metaplex Token Metadata support (no CPI wrappers for mpl-token-metadata). The Seahorse example demonstrates NFT configuration tracking with NftConfig PDA storing: authority, nft_id, mint, name (max 32 chars), symbol (max 10 chars), uri (max 200 chars), is_minted, bump. Instructions: create_nft_config (validate lengths, init PDA), update_nft_config (update before minting), mark_as_minted (record mint address, set flag), get_nft_info (log config). The Anchor reference implements full Metaplex CPI for mint_nft (creates mint, metadata account, master edition) plus parity-compatible instructions (create_nft_config, update_nft_config, mark_as_minted). 13 LiteSVM integration tests: create config (basic, different IDs, name/symbol too long), update config (basic, unauthorized, after minting fails), mark_as_minted (basic, unauthorized, twice fails), get_nft_info, full workflow, PDA determinism. Parity is conceptual - Anchor does actual Metaplex CPI while Seahorse tracks configuration only."
     },
     {
       "id": "US-028",

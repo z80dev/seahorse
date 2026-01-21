@@ -742,3 +742,34 @@
   - LiteSVM warp_to_slot() essential for testing time-based auction logic
   - Anchor's Clock sysvar must be passed as parameter to Seahorse instructions for slot-based timing
 ---
+
+## 2026-01-21 - US-027
+- Implemented NFT minting configuration tracking program
+- Files changed:
+  - examples/nft_mint.py (new Seahorse NFT config tracking program)
+  - tests/anchor-reference/nft_mint_anchor/src/lib.rs (new Anchor reference with Metaplex CPI)
+  - tests/anchor-reference/nft_mint_anchor/Cargo.toml (new)
+  - tests/compiled-examples/nft_mint.rs (compiled Seahorse output)
+  - tests/integration/nft_mint_integration.rs (new - 13 integration tests)
+  - tests/integration/Cargo.toml (added nft_mint_integration test target)
+- NFT config features:
+  - NftConfig account: authority, nft_id (u64 for PDA derivation), mint, name (max 32 chars), symbol (max 10 chars), uri (max 200 chars), is_minted, bump
+  - create_nft_config: Creates config PDA with validated metadata (length checks)
+  - update_nft_config: Updates metadata before minting (fails after is_minted=true)
+  - mark_as_minted: Records mint address, sets is_minted flag (simulates Metaplex mint)
+  - get_nft_info: Logs configuration data for verification
+- Key design decisions:
+  - Seahorse doesn't have native Metaplex Token Metadata support (no CPI wrappers)
+  - Parity approach matches Token-2022 pattern: Seahorse tracks config, Anchor does actual CPI
+  - PDA seeds: ['nft_config', nft_id] using u64 (can't use UncheckedAccount in Seahorse seeds)
+  - Anchor reference includes both full Metaplex mint_nft (metadata + master edition) and parity-compatible instructions
+  - mpl-token-metadata v5.0.0 no longer has no-entrypoint feature - removed from Cargo.toml
+- Test coverage:
+  - Integration (13 tests): create config (basic, multiple IDs, name/symbol too long errors), update config (basic, unauthorized fails, after minting fails), mark_as_minted (basic, unauthorized fails, twice fails), get_nft_info, full workflow, PDA determinism
+- **Learnings for future iterations:**
+  - Seahorse print statements that use moved values cause Rust borrow errors in compiled output
+  - Move print statements BEFORE assignments when the assigned values are used in the print
+  - mpl-token-metadata 5.x no longer has no-entrypoint feature - just use plain dependency
+  - For features Seahorse doesn't support natively (Metaplex, Token-2022), use config tracking pattern
+  - NftConfig uses nft_id: u64 instead of mint key because Seahorse can't use UncheckedAccount in PDA seeds
+---
