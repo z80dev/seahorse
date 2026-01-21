@@ -932,3 +932,44 @@
   - PDA seeds: ['voter_record', proposal_id, voter] works; ['voter_record', proposal, voter] fails (cannot cast Account as Seed)
   - Time-based testing uses svm.warp_to_slot(slot) and svm.expire_blockhash()
 ---
+
+## 2026-01-21 - US-034
+- Implemented token-weighted governance program with voting power based on token balance
+- Files changed:
+  - examples/governance.py (new) - Seahorse governance implementation
+  - tests/compiled-examples/governance.rs (new) - Compiled Rust output
+  - tests/anchor-reference/governance_anchor/src/lib.rs (new) - Anchor reference
+  - tests/anchor-reference/governance_anchor/Cargo.toml (new)
+  - tests/integration/governance_integration.rs (new) - 18 integration tests
+  - tests/integration/Cargo.toml (modified) - Added governance_integration test
+  - tests/common/governance_parity.rs (new) - 5 parity tests
+  - tests/common/Cargo.toml (modified) - Added governance_parity test
+- Governance features:
+  - GovernanceConfig account: authority, governance_mint, proposal_threshold, default_voting_duration, next_proposal_id, bump
+  - Proposal account: governance, creator, proposal_id, title, description, yes_votes, no_votes, quorum, start_slot, end_slot, is_finalized, result, bump
+  - VoterRecord account: voter, proposal, vote_yes, voting_power, voted_at_slot, bump
+  - initialize_governance: Creates governance config PDA with configurable threshold and default duration
+  - update_governance_config: Modifies proposal threshold and voting duration
+  - create_proposal: Creates proposal PDA (requires token threshold), sets up voting period
+  - cast_vote: Records weighted vote (voting power = token balance at time of vote)
+  - finalize_proposal: Finalizes proposal after voting ends, checks quorum, determines result
+- Key design decisions:
+  - Proposal PDA seeds: ['proposal', proposal_id] using u64 (not mint because Seahorse can't use Account types as PDA seeds)
+  - VoterRecord PDA seeds: ['voter_record', proposal_id, voter] for double-vote prevention
+  - Voting power = token balance at time of voting (snapshot approach)
+  - Result codes: 0=pending, 1=passed, 2=rejected, 3=quorum_not_met
+  - Quorum checking at finalization time
+- Bug fixes during implementation:
+  - Fixed account meta mutability: TokenAccount and Config accounts are marked #[account(mut)] in Seahorse, tests must use writable_meta() not readonly_meta()
+  - Fixed parity tests to use new svm.set_account() pattern instead of direct function calls
+- Test coverage:
+  - Integration (18 tests): initialize_governance, create_proposal, cast_vote (weighted yes/no), finalize_proposal (pass/reject/quorum_not_met), double_vote_fails, vote_after_end_fails, vote_zero_balance_fails, full_governance_workflow, PDA determinism
+  - Parity (5 tests): governance_initialization, weighted_vote_calculation, quorum_enforcement, full_governance_workflow, deterministic_pda_derivation
+- **Learnings for future iterations:**
+  - Seahorse-generated code marks TokenAccount as #[account(mut)] - tests must use writable_meta() even for read-only token operations
+  - For governance patterns, use proposal_id (u64) in PDA seeds rather than trying to use Account types
+  - Voting power is determined at vote time - snapshot of token balance recorded in voter record
+  - Quorum is total votes (yes + no), not just yes votes
+  - Tie result (yes == no) defaults to rejected (conservative approach)
+---
+

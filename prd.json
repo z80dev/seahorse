@@ -601,8 +601,8 @@
         "Typecheck passes"
       ],
       "priority": 35,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Token-weighted governance with GovernanceConfig, Proposal, and VoterRecord accounts. Features: create_proposal, cast_vote (weighted by token balance), finalize_proposal with quorum enforcement and voting period. 18 integration tests + 5 parity tests all pass."
     },
     {
       "id": "US-035",
