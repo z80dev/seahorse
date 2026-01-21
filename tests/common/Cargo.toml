@@ -35,6 +35,10 @@ borsh = "0.10"
 # For colored output
 colored = "2.1"
 
+# SPL Token for ATA parity tests
+spl-token = "7.0"
+spl-associated-token-account = "6.0"
+
 [[test]]
 name = "compare_tests"
 path = "tests.rs"
@@ -58,3 +62,7 @@ path = "pda_patterns_parity.rs"
 [[test]]
 name = "init_patterns_parity"
 path = "init_patterns_parity.rs"
+
+[[test]]
+name = "ata_patterns_parity"
+path = "ata_patterns_parity.rs"

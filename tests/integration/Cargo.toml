@@ -71,3 +71,7 @@ path = "token_vault_integration.rs"
 [[test]]
 name = "token_mint_integration"
 path = "token_mint_integration.rs"
+
+[[test]]
+name = "ata_patterns_integration"
+path = "ata_patterns_integration.rs"
