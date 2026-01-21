@@ -849,3 +849,29 @@
   - StakeRecord PDA as vault authority enables unstake without needing pool authority
   - Combined US-029 and US-030 because tests were implemented alongside the main program
 ---
+
+## 2026-01-21 - US-031
+- Implemented NFT marketplace for listing and purchasing NFTs
+- Files changed:
+  - examples/nft_marketplace.py (new Seahorse marketplace program)
+  - tests/anchor-reference/nft_marketplace_anchor/src/lib.rs (new Anchor reference)
+  - tests/anchor-reference/nft_marketplace_anchor/Cargo.toml (new)
+  - tests/compiled-examples/nft_marketplace.rs (compiled Seahorse output)
+- NFT marketplace features:
+  - Listing account: seller, listing_id (u64 for PDA), nft_mint, payment_mint, price, is_active, bump
+  - list_nft: Creates listing PDA and NFT escrow vault PDA, transfers NFT from seller to escrow
+  - buy_nft: Buyer pays seller via token transfer, NFT transferred from escrow to buyer via PDA-signed transfer
+  - delist_nft: Seller cancels listing, NFT returned via PDA-signed transfer
+  - update_price: Change listing price while active (seller only)
+- Key design decisions:
+  - Uses SPL tokens for payment (not SOL) since Seahorse supports PDA-signed token transfers but not PDA-signed lamport transfers (same pattern as auction.py)
+  - Listing PDA seeds: ['listing', listing_id]
+  - NFT escrow vault seeds: ['nft_escrow', listing_id]
+  - Listing PDA is the NFT escrow vault authority
+  - PDA seeds use listing_id (u64) instead of nft_mint because UncheckedAccount cannot be used in Seahorse PDA seeds
+- **Learnings for future iterations:**
+  - TokenAccount.init() must have its return value assigned: `nft_escrow = nft_escrow.init(...)` not just `nft_escrow.init(...)`
+  - For marketplace-style flows (list/buy/delist), the pattern matches auction: escrow token account with listing/auction PDA as authority
+  - PDA-signed token transfers use `token_account.transfer(authority=listing, ..., signer=['listing', listing_id, bump])`
+  - SPL token payment is more versatile than SOL for Seahorse programs due to PDA signer support
+---

@@ -548,8 +548,8 @@
         "Typecheck passes"
       ],
       "priority": 32,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/nft_marketplace.py. Reference at tests/anchor-reference/nft_marketplace_anchor/. Instructions: list_nft (creates listing PDA and NFT escrow vault, transfers NFT to escrow), buy_nft (pays seller, transfers NFT to buyer), delist_nft (returns NFT to seller), update_price (change price while active). Uses SPL tokens for payment (not SOL) since Seahorse supports PDA-signed token transfers but not PDA-signed lamport transfers. Listing PDA is NFT escrow vault authority. PDA seeds use listing_id (u64) to avoid UncheckedAccount limitation."
     },
     {
       "id": "US-032",
