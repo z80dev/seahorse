@@ -50,3 +50,7 @@ path = "hello_world_integration.rs"
 [[test]]
 name = "calculator_integration"
 path = "calculator_integration.rs"
+
+[[test]]
+name = "pda_patterns_integration"
+path = "pda_patterns_integration.rs"

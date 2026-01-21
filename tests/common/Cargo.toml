@@ -50,3 +50,7 @@ path = "hello_world_parity.rs"
 [[test]]
 name = "calculator_parity"
 path = "calculator_parity.rs"
+
+[[test]]
+name = "pda_patterns_parity"
+path = "pda_patterns_parity.rs"
