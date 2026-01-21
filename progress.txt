@@ -805,3 +805,47 @@
   - Collection finalization locks metadata but still allows adding/verifying NFTs
   - total_nfts and verified_nfts counters enable on-chain collection statistics
 ---
+
+## 2026-01-21 - US-029 & US-030
+- Implemented NFT staking with time-based reward tokens
+- Files changed:
+  - examples/nft_staking.py (new Seahorse NFT staking program)
+  - tests/anchor-reference/nft_staking_anchor/src/lib.rs (new Anchor reference)
+  - tests/anchor-reference/nft_staking_anchor/Cargo.toml (new)
+  - tests/compiled-examples/nft_staking.rs (compiled Seahorse output)
+  - tests/integration/nft_staking_integration.rs (new - 9 integration tests)
+  - tests/integration/Cargo.toml (added nft_staking_integration test target)
+- NFT staking features:
+  - Pool account: authority, reward_mint, reward_rate, total_staked, last_update_slot, bump
+  - StakeRecord account: owner, pool, nft_mint, nft_vault, staked_at_slot, last_claim_slot, pending_rewards, is_staked, bump
+  - initialize_pool: Creates pool state PDA with configurable reward rate (pool is reward mint authority)
+  - stake_nft: Transfers NFT to PDA vault, creates stake record (stake_record is vault authority)
+  - unstake_nft: Returns NFT to user, mints accumulated rewards via PDA-signed mint
+  - claim_rewards: Mints rewards without unstaking (stake preserved)
+- Reward formula: rewards = reward_rate * slots_elapsed / REWARD_SCALE
+  - REWARD_SCALE = 1,000,000 (for precision without floating point)
+  - Per-NFT rewards (not per-token like fungible staking)
+- Key design decisions:
+  - Pool PDA seeds: ['pool', reward_mint] (not authority) due to Seahorse limitation
+  - Seahorse cannot use UncheckedAccount in PDA signer seeds
+  - StakeRecord PDA seeds: ['stake_record', nft_mint] (each NFT has one record)
+  - StakeRecord is the NFT vault authority (for transfer back on unstake)
+  - Pool is the reward mint authority (for minting rewards)
+  - NFT vault seeds: ['nft_vault', nft_mint]
+- Test coverage (9 tests):
+  - initialize_pool: basic setup
+  - stake_nft: happy path, user doesn't own NFT fails
+  - unstake_nft_with_rewards: uses warp_to_slot() for time-based reward accumulation
+  - unstake_not_staked_fails: validation error
+  - claim_rewards_without_unstaking: preserves stake, mints rewards
+  - claim_rewards_not_staked_fails: validation error
+  - full_nft_staking_workflow: stake → warp → claim → warp → unstake
+  - pda_derivation_deterministic: verify seeds produce correct addresses
+- **Learnings for future iterations:**
+  - NFT has supply=1 - stake/unstake transfers amount=1
+  - warp_to_slot() advances time for slot-based reward calculation testing
+  - Seahorse PDA signer seeds must use parameter types that can be cast to Seed (TokenMint works, UncheckedAccount doesn't)
+  - For multi-party flows where PDA must sign, design seeds using available parameter types
+  - StakeRecord PDA as vault authority enables unstake without needing pool authority
+  - Combined US-029 and US-030 because tests were implemented alongside the main program
+---

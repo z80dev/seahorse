@@ -516,8 +516,8 @@
         "Typecheck passes"
       ],
       "priority": 30,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/nft_staking.py. Reference at tests/anchor-reference/nft_staking_anchor/. Instructions: initialize_pool (creates pool with configurable reward rate), stake_nft (transfers NFT to PDA vault, creates stake record), unstake_nft (returns NFT, claims rewards via PDA-signed mint), claim_rewards (mint rewards without unstaking). Pool PDA uses reward_mint (not authority) due to Seahorse limitation - UncheckedAccount cannot be used in signer seeds. StakeRecord PDA is NFT vault authority. Time-based rewards via slot numbers with warp_to_slot() in tests."
     },
     {
       "id": "US-030",
@@ -531,8 +531,8 @@
         "Typecheck passes"
       ],
       "priority": 31,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "9 LiteSVM integration tests (tests/integration/nft_staking_integration.rs): initialize_pool, stake_nft (happy path + not owner fails), unstake_nft_with_rewards (uses warp_to_slot for time-based reward accumulation), unstake_not_staked_fails, claim_rewards_without_unstaking, claim_rewards_not_staked_fails, full_nft_staking_workflow, pda_derivation_deterministic. Tests verify: NFT transfers to vault on stake, NFT returns on unstake, reward minting via pool PDA signer, time-based reward calculation with slots."
     },
     {
       "id": "US-031",
