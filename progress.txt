@@ -281,3 +281,28 @@
   - Mollusk tests work for operations on pre-initialized accounts but not for init (needs system program CPI)
 ---
 
+## 2026-01-21 - US-013
+- Implemented PDA derivation patterns with full test suite
+- Files changed:
+  - examples/pda_patterns.py (new Seahorse PDA patterns)
+  - tests/anchor-reference/pda_patterns_anchor/ (Anchor reference program)
+  - tests/integration/pda_patterns_integration.rs (14 LiteSVM integration tests)
+  - tests/common/pda_patterns_parity.rs (4 behavior parity tests)
+  - tests/compiled-examples/pda_patterns.rs (compiled Seahorse output)
+- PDA patterns demonstrated:
+  - Single seed: GlobalConfig PDA with ["global_config"]
+  - User-derived: UserProfile PDA with ["user_profile", user.key()]
+  - Multiple seeds: DataRecord with ["data_record", category, record_id]
+  - Multiple seeds: Vault with ["vault", owner.key(), vault_id]
+  - Bump storage: All accounts store bump from init
+- Test coverage:
+  - Integration: Init, update, authorization, multiple accounts, bump persistence
+  - Parity: Global config workflow, vault deposits, PDA determinism, auth rejection
+- **Learnings for future iterations:**
+  - Seahorse stores bump via `config.bump = config.bump()` pattern before init
+  - Anchor `#[instruction(arg)]` annotation means arg must be in instruction data even if only used for PDA verification
+  - For parity tests with instruction data differences, use ProgramType enum to switch serialization
+  - Account sizes may differ between Seahorse and Anchor - verify field offsets carefully
+  - String serialization in Borsh: 4-byte length prefix (u32 LE) + UTF-8 bytes
+---
+

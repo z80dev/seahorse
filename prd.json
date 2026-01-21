@@ -234,8 +234,8 @@
         "Typecheck passes"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/pda_patterns.py. Reference at tests/anchor-reference/pda_patterns_anchor/. 14 LiteSVM integration tests, 4 parity tests. Patterns: global_config (single seed), user_profile (user-derived), data_record (category+id), vault (owner+id). Bump stored and verified. Note: Anchor requires vault_id in deposit_to_vault instruction data for PDA verification."
     },
     {
       "id": "US-014",
