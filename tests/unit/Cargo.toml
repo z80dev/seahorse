@@ -1,0 +1,26 @@
+[package]
+name = "seahorse-unit-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "seahorse_unit_tests"
+path = "lib.rs"
+
+[dependencies]
+# Solana SDK for types and accounts (pin to 2.1 for mollusk compatibility)
+solana-sdk = "=2.1.0"
+# Pin other Solana crates to match mollusk requirements
+solana-bpf-loader-program = "=2.1.0"
+solana-compute-budget = "=2.1.0"
+solana-program-runtime = "=2.1.0"
+solana-system-program = "=2.1.0"
+# Borsh for serialization
+borsh = "0.10"
+# Mollusk for fast unit testing
+mollusk-svm = "=0.0.12"
+
+[[test]]
+name = "unit_tests"
+path = "tests.rs"
