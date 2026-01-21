@@ -125,3 +125,19 @@
   - Generated code produces "unused macro" warning for `Loaded!` macro - harmless
 ---
 
+## 2026-01-20 - US-006
+- Verified LiteSVM Rust test harness already complete from US-003
+- Files changed: none (verification only)
+- Verification results:
+  - litesvm 0.6.1 dependency in tests/integration/Cargo.toml ✓
+  - tests/integration/ directory structure exists ✓
+  - Test utilities implemented: program_account, find_pda, anchor_discriminator ✓
+  - litesvm_with_program helper exists for loading .so files ✓
+  - 15 integration tests pass ✓
+  - cargo check passes (typecheck) ✓
+- **Learnings for future iterations:**
+  - US-006 was effectively completed as part of US-003 (LiteSVM setup)
+  - The litesvm_with_program helper loads .so files when available (US-008 will provide them)
+  - Test helpers cover: account creation, PDA derivation, discriminator calculation, slot warping
+---
+

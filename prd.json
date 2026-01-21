@@ -114,8 +114,8 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed as part of US-003. Uses litesvm 0.6.1 with solana modular crates 2.2.x. Helpers include litesvm_with_program for loading .so files, anchor_instruction for building instructions, and execute_tx for running transactions. 15 integration tests pass."
     },
     {
       "id": "US-007",
