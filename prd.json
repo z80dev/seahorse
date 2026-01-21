@@ -81,8 +81,8 @@
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "End-to-end validation of SDK 3.0 upgrade"
+      "passes": true,
+      "notes": "All 7 examples compile E2E. Fixed blake3 compatibility by pinning to =1.8.2 in generated Cargo.toml (v1.8.3+ requires edition 2024 unsupported by Solana BPF toolchain)."
     },
     {
       "id": "US-005",

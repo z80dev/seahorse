@@ -104,3 +104,24 @@
   - For Anchor 0.32.x compatibility, implement helpers directly without anchor-litesvm
 ---
 
+## 2026-01-21 - US-004
+- Verified all Seahorse examples compile E2E with SDK 3.0
+- Files changed: src/bin/cli/init.rs
+- Examples tested:
+  - calculator.py ✓
+  - constants.py ✓
+  - event.py ✓
+  - fizzbuzz.py ✓
+  - hello.py ✓
+  - stored_mutables.py ✓
+  - pyth.py ✓
+- Fix applied: Pin blake3 to =1.8.2 in generated Cargo.toml
+  - blake3 v1.8.3+ requires edition 2024 which requires nightly Cargo
+  - Solana BPF toolchain uses stable Cargo and doesn't support edition 2024
+- **Learnings for future iterations:**
+  - E2E testing flow: `seahorse init` → copy .py → `anchor build`
+  - Cargo feature `edition2024` requires nightly - pin dependencies that auto-update to versions requiring it
+  - The `anchor-spl/idl-build` warning is cosmetic - programs still build correctly
+  - Generated code produces "unused macro" warning for `Loaded!` macro - harmless
+---
+
