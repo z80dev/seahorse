@@ -290,7 +290,7 @@ use anchor_spl::{
 use dot::program::*;
 use std::{cell::RefCell, rc::Rc};
 
-declare_id!("MKT1NftMarketP1ace111111111111111111111111");
+declare_id!("Coa8ZSxePf7ZCsDNHE9SRHyZJRWWnZgmanuKVf4ZBM7Q");
 
 pub mod seahorse_util {
     use super::*;

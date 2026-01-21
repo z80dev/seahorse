@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("MKT1NftMarketP1ace111111111111111111111111");
+declare_id!("Coa8ZSxePf7ZCsDNHE9SRHyZJRWWnZgmanuKVf4ZBM7Q");
 
 /// NFT Marketplace program for listing and purchasing NFTs
 ///
