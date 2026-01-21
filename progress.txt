@@ -1056,3 +1056,43 @@
   - Staleness checks should use saturating_sub to handle edge cases
   - Threshold triggering is idempotent (already triggered returns early)
 ---
+
+
+## 2026-01-21 - US-037
+- Implemented cross-program invocation (CPI) patterns with token operations
+- Files changed:
+  - examples/cpi_patterns.py (new) - Seahorse CPI patterns implementation
+  - tests/compiled-examples/cpi_patterns.rs (new) - Compiled Rust output (1044 lines)
+  - tests/anchor-reference/cpi_patterns_anchor/src/lib.rs (new) - Anchor reference with CPI patterns
+  - tests/anchor-reference/cpi_patterns_anchor/Cargo.toml (new)
+  - tests/integration/cpi_patterns_integration.rs (new) - 15 integration tests
+  - tests/integration/Cargo.toml (modified) - Added cpi_patterns_integration test
+  - tests/common/cpi_patterns_parity.rs (new) - 5 parity tests
+  - tests/common/Cargo.toml (modified) - Added cpi_patterns_parity test
+- CPI patterns demonstrated:
+  - CpiVault account: authority, mint, total_deposited, total_withdrawn, transfer_count, bump
+  - MintConfig account: authority, mint, total_minted, operation_count, bump
+  - initialize_vault: Creates vault PDA and vault token account PDA
+  - basic_transfer_to_vault: Basic CPI - user signs token transfer to vault
+  - pda_signed_transfer_from_vault: CPI with PDA signer seeds - vault authority signs withdrawal
+  - initialize_mint_config: Creates mint config PDA to control minting
+  - chained_mint_and_transfer: Multiple CPIs in sequence - mint to intermediate, transfer to destination
+  - validated_burn: Pre-validation before CPI - check balance before burn
+  - get_vault_info: Read-only view of vault state
+- Key design patterns:
+  - Basic CPI: User is signer, no signer seeds needed
+  - PDA-signed CPI: Use signer=['seed1', 'seed2', bump] to sign with PDA
+  - Chained CPIs: Execute multiple token operations in single instruction
+  - Pre-validation: Check conditions before CPI for better error messages
+- Test coverage:
+  - Integration (15 tests): 8 pass without deployed program (validation tests), 7 require program build
+  - Parity (5 tests): All 5 pass - vault state, mint config state, PDA derivation, discriminators, token balances
+- **Learnings for future iterations:**
+  - Seahorse PDA signer seeds use list syntax: signer=['vault', authority, mint, bump]
+  - Bump is retrieved via vault.bump (stored field) not recomputed
+  - Multiple CPIs can be chained in a single instruction
+  - Pre-validation before CPI reduces compute units wasted on failed operations
+  - Token transfers use TokenAccount.transfer(authority=..., to=..., amount=..., [signer=...])
+  - Mint operations use TokenMint.mint(authority=..., to=..., amount=..., [signer=...])
+  - Burn operations use TokenMint.burn(authority=..., holder=..., amount=...)
+---
