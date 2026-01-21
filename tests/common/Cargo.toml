@@ -78,3 +78,7 @@ path = "token_swap_parity.rs"
 [[test]]
 name = "staking_parity"
 path = "staking_parity.rs"
+
+[[test]]
+name = "lending_parity"
+path = "lending_parity.rs"
