@@ -38,3 +38,7 @@ colored = "2.1"
 [[test]]
 name = "compare_tests"
 path = "tests.rs"
+
+[[test]]
+name = "counter_parity"
+path = "counter_parity.rs"

@@ -2117,6 +2117,7 @@ dependencies = [
 name = "seahorse-unit-tests"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "borsh 0.10.4",
  "mollusk-svm",
  "solana-bpf-loader-program",

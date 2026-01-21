@@ -211,3 +211,28 @@
   - Clone LiteSVM instances for "dry run" comparison before committing changes to real SVMs
 ---
 
+## 2026-01-21 - US-010
+- Implemented Counter program with full test suite
+- Files changed:
+  - examples/counter.py (new Seahorse counter)
+  - tests/anchor-reference/counter_anchor/ (Anchor reference program)
+  - tests/unit/counter_tests.rs (11 Mollusk unit tests)
+  - tests/integration/counter_integration.rs (10 LiteSVM integration tests)
+  - tests/common/counter_parity.rs (2 behavior parity tests)
+- Counter features:
+  - initialize: Creates PDA counter account with authority
+  - increment: Increases count by 1 with authorization check
+  - decrement: Decreases count by 1 with underflow protection
+  - set_value: Sets count to arbitrary value with authorization
+- Test coverage:
+  - Mollusk: Each instruction in isolation, authorization failures, underflow handling
+  - LiteSVM: Full workflows, multi-user scenarios, sequential operations
+  - Parity: Seahorse vs Anchor produce identical counter values
+- **Learnings for future iterations:**
+  - Seahorse-generated code requires rent sysvar for account init, Anchor 0.32+ doesn't
+  - Must use `svm.expire_blockhash()` between sequential transactions to avoid "AlreadyProcessed"
+  - InstructionBuilder API: `.build(program_id)` takes program ID, `.with_program_id()` is for CPI accounts
+  - Mollusk cannot test init instructions that require CPI to system program - use LiteSVM instead
+  - For parity tests with different account layouts, use separate instruction builders per program type
+---
+

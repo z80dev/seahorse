@@ -180,8 +180,8 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Reference at tests/anchor-reference/counter_anchor/. Seahorse at examples/counter.py. 11 Mollusk unit tests, 10 LiteSVM integration tests, 2 parity tests. Note: Seahorse requires rent sysvar for init, Anchor doesn't - parity tests account for this difference."
     },
     {
       "id": "US-011",

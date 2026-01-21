@@ -104,9 +104,9 @@ pub fn rent_exempt_lamports(data_size: usize) -> u64 {
 /// Fields: owner (32 bytes) + display (8 bytes)
 pub const CALCULATOR_SIZE: usize = 8 + 32 + 8; // discriminator + owner + display
 
-/// Standard account size for a simple counter account
-/// Fields: count (8 bytes)
-pub const COUNTER_SIZE: usize = 8 + 8; // discriminator + count
+/// Standard account size for the Counter account
+/// Fields: count (8 bytes) + authority (32 bytes)
+pub const COUNTER_SIZE: usize = 8 + 8 + 32; // discriminator + count + authority
 
 #[cfg(test)]
 mod tests {

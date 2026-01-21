@@ -38,3 +38,7 @@ borsh = "0.10"
 [[test]]
 name = "integration_tests"
 path = "tests.rs"
+
+[[test]]
+name = "counter_integration"
+path = "counter_integration.rs"
