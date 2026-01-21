@@ -478,3 +478,25 @@
   - Token-2022 mint needs manual space calculation with ExtensionType::try_calculate_account_len
   - Token-2022 mint initialization: 1) create_account 2) initialize_transfer_fee_config 3) initialize_mint
 ---
+
+## 2026-01-21 - US-019
+- Implemented Escrow program for trustless token swaps
+- Files changed:
+  - examples/escrow.py (new Seahorse escrow)
+  - tests/anchor-reference/escrow_anchor/ (Anchor reference program)
+  - tests/compiled-examples/escrow.rs (compiled Seahorse output)
+- Escrow features:
+  - make_escrow: Maker deposits Token A, specifies Token B wanted amount
+  - take_escrow: Taker sends Token B to maker, receives Token A from vault
+  - cancel_escrow: Maker can recover Token A before escrow is taken
+- Design decisions:
+  - PDA seeds use escrow_id only (not maker + escrow_id)
+  - Escrow PDA is the vault token account authority
+  - Vault derived with seeds=['vault', escrow_id]
+- **Learnings for future iterations:**
+  - Seahorse cannot use UncheckedAccount in PDA signer seeds
+  - When taker (non-maker) needs to trigger PDA-signed transfer, seeds must not include maker
+  - Use simpler seeds (escrow_id only) instead of complex seeds (maker + escrow_id) for multi-party flows
+  - Store bump in escrow account and read via escrow.bump for signer seeds
+  - Both init and transfer operations can use escrow PDA as authority via signer=['escrow', escrow_id, bump]
+---

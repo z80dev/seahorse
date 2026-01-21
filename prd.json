@@ -341,8 +341,8 @@
         "Typecheck passes"
       ],
       "priority": 20,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/escrow.py. Reference at tests/anchor-reference/escrow_anchor/. Instructions: make_escrow (maker deposits Token A, specifies Token B wanted), take_escrow (taker sends Token B, receives Token A), cancel_escrow (maker recovers Token A). PDA seeds use escrow_id only (not maker + escrow_id) to work around Seahorse limitation with UncheckedAccount in signer seeds. Escrow PDA is vault authority. Vault derived with seeds=['vault', escrow_id]."
     },
     {
       "id": "US-020",
