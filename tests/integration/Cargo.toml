@@ -127,3 +127,7 @@ path = "voting_integration.rs"
 [[test]]
 name = "governance_integration"
 path = "governance_integration.rs"
+
+[[test]]
+name = "multisig_integration"
+path = "multisig_integration.rs"

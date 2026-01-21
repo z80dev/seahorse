@@ -102,3 +102,7 @@ path = "voting_parity.rs"
 [[test]]
 name = "governance_parity"
 path = "governance_parity.rs"
+
+[[test]]
+name = "multisig_parity"
+path = "multisig_parity.rs"
