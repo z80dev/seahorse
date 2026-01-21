@@ -1,0 +1,22 @@
+[package]
+name = "voting_anchor"
+version = "0.1.0"
+description = "Simple voting program - Anchor reference for Seahorse parity testing"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "voting_anchor"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.32.0"
+
+[dev-dependencies]
+anchor-client = "0.32.0"

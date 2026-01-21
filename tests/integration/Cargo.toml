@@ -119,3 +119,7 @@ path = "nft_staking_integration.rs"
 [[test]]
 name = "nft_marketplace_integration"
 path = "nft_marketplace_integration.rs"
+
+[[test]]
+name = "voting_integration"
+path = "voting_integration.rs"

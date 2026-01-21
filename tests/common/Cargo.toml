@@ -94,3 +94,7 @@ path = "auction_parity.rs"
 [[test]]
 name = "nft_marketplace_parity"
 path = "nft_marketplace_parity.rs"
+
+[[test]]
+name = "voting_parity"
+path = "voting_parity.rs"
