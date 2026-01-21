@@ -673,8 +673,8 @@
         "Typecheck passes"
       ],
       "priority": 39,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/realloc_close.py. Reference at tests/anchor-reference/realloc_close_anchor/. NOTE: Seahorse doesn't support native realloc/close operations. The Seahorse example demonstrates a tracking pattern with DynamicData (simulated resize/close via is_closed flag and allocated_size tracking) and ResizeRecord (tracks resize history, max size, operation count). Instructions: initialize_data, grow_account, shrink_account, close_data_account, create_record, record_resize, close_record, get_data_info, get_record_info. The Anchor reference implements actual realloc constraints (realloc::payer, realloc::zero) and close constraint for real account lifecycle. 14 LiteSVM integration tests (gracefully skip when program not built), 6 parity tests for discriminators, instruction discriminators, PDA derivation, and state transitions."
     },
     {
       "id": "US-039",
