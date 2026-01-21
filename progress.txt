@@ -53,3 +53,33 @@
   - The practical "SDK upgrade" for Anchor 0.32 compatibility is solana-sdk 2.2.x
 ---
 
+## 2026-01-21 - US-001
+- Updated Anchor dependencies for SDK 3.0 compatibility
+- Files changed: src/bin/cli/init.rs
+- Changes made:
+  - Removed outdated ahash pin (=0.8.9) - no longer needed with Rust 1.84+ in Solana platform-tools v1.51
+  - Updated pyth-sdk-solana from 0.10.2 to 0.10.6
+  - Generated Cargo.toml now inherits anchor-lang version from `anchor init` (currently 0.32.1)
+  - anchor-spl version matches anchor-lang automatically
+- **Learnings for future iterations:**
+  - ahash pin was needed for Rust < 1.71 due to MSRV issues (solana-labs/solana#33504)
+  - Solana platform-tools v1.51+ uses Rust 1.84, so the pin is obsolete
+  - seahorse init.rs reads anchor-lang version from generated Cargo.toml, not hardcoded
+  - anchor-lang 0.32.x uses solana modular crates ^2, compatible with solana-sdk 2.2.x
+  - anchor-lang 1.0 (RC) uses modular crates ^3+ - future upgrade path when stable
+---
+
+## 2026-01-21 - US-002
+- Verified mollusk-svm SDK 3.0 compatibility - already done in US-000
+- Files changed: none (verification only)
+- Verification results:
+  - mollusk-svm 0.1.3 with solana-sdk 2.2.1 is correctly configured
+  - All 12 Mollusk unit tests pass
+  - API uses Account type (compatible with SDK 2.2)
+  - cargo check passes (typecheck)
+- **Learnings for future iterations:**
+  - US-002 was effectively completed as part of US-000 dependency upgrade
+  - The Mollusk test harness from US-005 + dependency upgrade from US-000 covers all US-002 criteria
+  - Version compatibility chain: mollusk-svm 0.1.3 ↔ solana-sdk 2.2.1 ↔ Anchor 0.32.x
+---
+

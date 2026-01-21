@@ -32,8 +32,8 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": "Anchor 0.30+ should support SDK 3.0"
+      "passes": true,
+      "notes": "Anchor 0.32.1 with Solana SDK 2.2.x modular crates. Removed outdated ahash pin, updated pyth-sdk-solana to 0.10.6. Generated Cargo.toml inherits anchor-lang version from anchor init."
     },
     {
       "id": "US-002",
@@ -48,8 +48,8 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": "Check mollusk-svm releases for SDK 3.0 support"
+      "passes": true,
+      "notes": "Using mollusk-svm 0.1.3 with solana-sdk 2.2.1 - the latest versions compatible with Anchor 0.32.x. All 12 Mollusk tests pass. API uses Account type (vs older AccountSharedData)."
     },
     {
       "id": "US-003",
