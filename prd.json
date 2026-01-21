@@ -463,8 +463,8 @@
         "Typecheck passes"
       ],
       "priority": 27,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/auction.py. Reference at tests/anchor-reference/auction_anchor/. Token-based auction (not SOL) because Seahorse doesn't support PDA-signed lamport transfers - only TokenAccount.transfer() with signer seeds. Auction account: seller, auction_id, bid_mint, starting_price, current_bid, highest_bidder, start_slot, end_slot, is_ended, is_claimed, bump. Instructions: create_auction (creates auction PDA and bid escrow vault), place_bid (outbids previous, refunds previous bidder via PDA-signed transfer), end_auction (marks ended after end_slot), claim_prize (winner confirms, seller receives payment). 16 LiteSVM integration tests covering all instructions, validation failures, time warping. 6 parity tests verifying state initialization, bid refund mechanics, time enforcement, PDA derivation."
     },
     {
       "id": "US-027",

@@ -705,3 +705,40 @@
   - Both Seahorse and Anchor use same linear vesting formula: total * elapsed / period (integer division)
   - Store bump in vesting account for PDA signer seeds in claim and cancel instructions
 ---
+
+## 2026-01-21 - US-026
+- Implemented token-based auction program with time-based state transitions
+- Files changed:
+  - examples/auction.py (new Seahorse auction program)
+  - tests/anchor-reference/auction_anchor/src/lib.rs (new Anchor reference)
+  - tests/anchor-reference/auction_anchor/Cargo.toml (new)
+  - tests/compiled-examples/auction.rs (compiled Seahorse output)
+  - tests/integration/auction_integration.rs (new - 16 integration tests)
+  - tests/integration/Cargo.toml (added auction_integration test target)
+  - tests/common/auction_parity.rs (new - 6 parity tests)
+  - tests/common/Cargo.toml (added auction_parity test target)
+- Auction features:
+  - Auction account: seller, auction_id, bid_mint, starting_price, current_bid, highest_bidder, start_slot, end_slot, is_ended, is_claimed, bump
+  - create_auction: Creates auction PDA and bid_escrow vault PDA (auction is vault authority)
+  - place_bid: Transfers new bid to escrow, refunds previous highest bidder via PDA-signed transfer
+  - end_auction: Marks auction as ended (only callable after end_slot)
+  - claim_prize: Winner confirms claim, payment transferred from escrow to seller
+- Key design decisions:
+  - Token-based auction (not SOL) because Seahorse doesn't support PDA-signed lamport transfers
+  - Seahorse only has Signer.transfer_lamports() for native SOL, no PDA-signed SOL transfer
+  - TokenAccount.transfer(authority, to, amount, signer) works with PDA signer seeds
+  - Auction PDA seeds: ['auction', auction_id]
+  - Bid escrow vault seeds: ['bid_escrow', auction_id]
+  - highest_bidder uses seller.key() as placeholder when no bids (current_bid=0 indicates no real bids)
+  - Seahorse doesn't support Pubkey() constructor - can't create default/empty pubkey
+- Test coverage:
+  - Integration (16 tests): create_auction (basic, different IDs, zero price fails, zero duration fails), place_bid (first bid, outbid with refund, below minimum fails, auction expired fails, bid on ended fails), end_auction (success after expiry, before expiry fails, already ended fails), claim_prize (success, not winner fails, not ended fails, no bids fails), full workflow
+  - Parity (6 tests): state initialization, bid token transfer, outbid refund mechanics, time-based auction end, claim payment transfer, deterministic PDA derivation
+- **Learnings for future iterations:**
+  - Seahorse doesn't have Pubkey() constructor - use a known pubkey as placeholder with state flag (e.g., current_bid=0)
+  - For multi-party flows (auction), use escrow pattern with PDA as vault authority
+  - TokenAccount.transfer() with signer seeds enables PDA-signed token transfers
+  - Token-based auctions avoid the limitation of no PDA-signed SOL transfers in Seahorse
+  - LiteSVM warp_to_slot() essential for testing time-based auction logic
+  - Anchor's Clock sysvar must be passed as parameter to Seahorse instructions for slot-based timing
+---
