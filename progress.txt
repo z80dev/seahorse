@@ -912,3 +912,23 @@
   - svm.expire_blockhash() needed between transactions to avoid duplicate signature errors
   - Full workflow tests verify entire user journey, not just individual operations
 ---
+
+## 2026-01-21 - US-033
+- Implemented simple voting program with proposal and vote mechanics
+- Files changed:
+  - examples/voting.py (new) - Seahorse voting implementation
+  - tests/compiled-examples/voting.rs (new) - Compiled Rust output
+  - tests/anchor-reference/voting_anchor/src/lib.rs (new) - Anchor reference
+  - tests/anchor-reference/voting_anchor/Cargo.toml (new)
+  - tests/integration/voting_integration.rs (new) - 15 integration tests
+  - tests/integration/Cargo.toml (modified) - Added voting_integration test
+  - tests/common/voting_parity.rs (new) - 5 parity tests
+  - tests/common/Cargo.toml (modified) - Added voting_parity test
+- **Learnings for future iterations:**
+  - Seahorse cannot cast Account types as Seeds directly - use stored IDs (e.g., proposal_id) instead of account.key()
+  - For double-vote prevention, init a voter record PDA with seeds including user pubkey - fails if already exists
+  - Variables defined in if/elif/else blocks cannot be used outside those blocks in Seahorse - put print/log statements inside each branch
+  - String fields need padding parameter in init() for variable-length data allocation
+  - PDA seeds: ['voter_record', proposal_id, voter] works; ['voter_record', proposal, voter] fails (cannot cast Account as Seed)
+  - Time-based testing uses svm.warp_to_slot(slot) and svm.expire_blockhash()
+---

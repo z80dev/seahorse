@@ -583,8 +583,8 @@
         "Typecheck passes"
       ],
       "priority": 34,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/voting.py. Reference at tests/anchor-reference/voting_anchor/. Instructions: create_proposal (configurable voting duration, title/description), cast_vote (yes/no with voter record PDA for double-vote prevention), finalize_proposal (time-based, marks result). Voter record PDA uses proposal_id + voter (not proposal.key() + voter) since Seahorse cannot cast Account as Seed directly. 15 LiteSVM integration tests: create proposal (basic, different IDs, title too long, zero duration), cast vote (yes, no, multiple voters, double vote fails, after end fails), finalize (passed, rejected, before end fails, already finalized fails), full workflow, PDA determinism. 5 parity tests: proposal initialization state, vote tallying, double-vote prevention, finalization mechanics, deterministic PDA derivation."
     },
     {
       "id": "US-034",
