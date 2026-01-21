@@ -373,8 +373,8 @@
         "Typecheck passes"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/token_swap.py. Reference at tests/anchor-reference/token_swap_anchor/. Pool PDA with seeds=['pool', mint_a, mint_b]. Instructions: initialize_pool (creates pool, LP mint, pool token accounts), add_liquidity (geometric mean for first deposit, proportional for subsequent), remove_liquidity (burn LP, receive proportional tokens), swap (constant product formula with configurable fee). Minimum liquidity (100) locked on first deposit. Slippage protection via min_lp_tokens and min_amount_out. isqrt function implements integer square root using Newton's method."
     },
     {
       "id": "US-022",

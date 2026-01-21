@@ -530,3 +530,31 @@
   - For parity tests between programs with different interfaces, focus on verifying similar behavior rather than byte-for-byte comparison
   - Anchor escrow uses InterfaceAccount + associated_token::authority while Seahorse uses Box<Account<TokenAccount>> + basic token accounts
 ---
+
+## 2026-01-21 - US-021
+- Implemented Token swap AMM (Automated Market Maker) with constant product formula
+- Files changed:
+  - examples/token_swap.py (new Seahorse AMM)
+  - tests/anchor-reference/token_swap_anchor/ (Anchor reference program)
+  - tests/compiled-examples/token_swap.rs (compiled Seahorse output)
+- AMM features:
+  - Pool account: mint_a, mint_b, lp_mint, pool_token_a, pool_token_b, fee_bps, bump
+  - initialize_pool: Creates pool state PDA, LP token mint PDA, pool token accounts PDA
+  - add_liquidity: Geometric mean for first deposit (sqrt(a*b) - MIN_LIQUIDITY), proportional for subsequent
+  - remove_liquidity: Burn LP tokens, receive proportional share of pool tokens
+  - swap: Constant product formula with configurable fee (x * y = k)
+  - isqrt: Integer square root using Newton's method
+- Key design decisions:
+  - Pool PDA seeds: ['pool', mint_a, mint_b]
+  - Pool is authority for LP mint and pool token accounts
+  - Minimum liquidity (100) locked on first deposit to prevent manipulation
+  - Slippage protection via min_lp_tokens and min_amount_out parameters
+  - Fee in basis points (e.g., 30 = 0.3%)
+- **Learnings for future iterations:**
+  - Seahorse constants use `CONSTANT = value` not `CONSTANT: type = value`
+  - Program IDs must be valid base58 that decodes to exactly 32 bytes (43-44 chars typically)
+  - Use integer math throughout to avoid floating point: (a * b) // c instead of a * b / c
+  - For multi-token operations, use u64 arithmetic with u128 intermediate for overflow safety
+  - Newton's method for isqrt: x = (x + n/x) / 2 until x stabilizes
+  - Pin blake3 to =1.8.2 in Anchor Cargo.toml to avoid edition 2024 requirement
+---
