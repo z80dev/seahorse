@@ -99,3 +99,7 @@ path = "lending_integration.rs"
 [[test]]
 name = "vesting_integration"
 path = "vesting_integration.rs"
+
+[[test]]
+name = "auction_integration"
+path = "auction_integration.rs"
