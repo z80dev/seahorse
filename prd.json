@@ -325,8 +325,8 @@
         "Typecheck passes"
       ],
       "priority": 19,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/token_2022.py. Reference at tests/anchor-reference/token_2022_anchor/. NOTE: Seahorse doesn't have native Token-2022 support (only legacy SPL Token via TokenMint/TokenAccount). The Seahorse example demonstrates fee configuration tracking with FeeConfig PDA storing mint, authority, decimals, transfer_fee_bps, max_fee, and total_fees_collected. Instructions: initialize_fee_config, update_fee_rate, calculate_transfer_fee, record_fee_collection, get_fee_info. The Anchor reference implements actual Token-2022 transfer fee extension using spl-token-2022 crate with manual CPI for mint initialization and fee withdrawal. 17 LiteSVM integration tests covering fee config initialization, fee rate updates, fee calculation (including max fee capping), fee recording, and authorization checks. Parity is conceptual - both programs track transfer fees but Anchor interacts with Token-2022 while Seahorse tracks configuration only."
     },
     {
       "id": "US-019",
