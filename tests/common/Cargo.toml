@@ -106,3 +106,7 @@ path = "governance_parity.rs"
 [[test]]
 name = "multisig_parity"
 path = "multisig_parity.rs"
+
+[[test]]
+name = "oracle_consumer_parity"
+path = "oracle_consumer_parity.rs"

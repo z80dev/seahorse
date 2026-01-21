@@ -131,3 +131,7 @@ path = "governance_integration.rs"
 [[test]]
 name = "multisig_integration"
 path = "multisig_integration.rs"
+
+[[test]]
+name = "oracle_consumer_integration"
+path = "oracle_consumer_integration.rs"
