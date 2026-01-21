@@ -30,3 +30,7 @@ path = "tests.rs"
 [[test]]
 name = "counter_tests"
 path = "counter_tests.rs"
+
+[[test]]
+name = "calculator_tests"
+path = "calculator_tests.rs"

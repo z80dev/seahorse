@@ -46,3 +46,7 @@ path = "counter_parity.rs"
 [[test]]
 name = "hello_world_parity"
 path = "hello_world_parity.rs"
+
+[[test]]
+name = "calculator_parity"
+path = "calculator_parity.rs"
