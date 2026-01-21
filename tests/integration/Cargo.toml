@@ -103,3 +103,7 @@ path = "vesting_integration.rs"
 [[test]]
 name = "auction_integration"
 path = "auction_integration.rs"
+
+[[test]]
+name = "nft_mint_integration"
+path = "nft_mint_integration.rs"
