@@ -236,3 +236,24 @@
   - For parity tests with different account layouts, use separate instruction builders per program type
 ---
 
+## 2026-01-21 - US-011
+- Implemented Hello World program with full test suite
+- Files changed:
+  - examples/hello_world.py (new Seahorse hello world)
+  - tests/anchor-reference/hello_world_anchor/ (Anchor reference program)
+  - tests/integration/hello_world_integration.rs (4 LiteSVM integration tests)
+  - tests/common/hello_world_parity.rs (2 behavior parity tests)
+- Hello World features:
+  - say_hello: Logs "Hello world, from Solana smart contract"
+  - Requires a signer account (Anchor 0.32+ requires at least one account)
+- Test coverage:
+  - LiteSVM: Program execution, multiple calls, different signers, compute units
+  - Parity: Seahorse vs Anchor produce identical logs
+- **Learnings for future iterations:**
+  - Base58 program IDs must decode to exactly 32 bytes - "HeLLo111..." was 31 bytes
+  - Use valid base58 IDs like "He11oWor1d111111111111111111111111111111111" (43 chars)
+  - Anchor 0.32 programs cannot have empty `#[derive(Accounts)]` structs - need at least one account
+  - Module name in `#[program] pub mod X` should match crate name (e.g., hello_world_anchor not hello_world)
+  - LiteSVM's TransactionResult.logs field contains program logs for verification
+---
+
