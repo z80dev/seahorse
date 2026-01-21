@@ -65,8 +65,8 @@
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": "Check litesvm releases for SDK 3.0 support"
+      "passes": true,
+      "notes": "Using litesvm 0.6.1 with solana modular crates 2.2.x. All 15 LiteSVM integration tests pass. anchor-litesvm 0.2.0 skipped (requires anchor-lang 0.31.1, we use 0.32.1) - helpers implemented directly."
     },
     {
       "id": "US-004",
