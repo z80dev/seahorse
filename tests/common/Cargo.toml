@@ -114,3 +114,7 @@ path = "oracle_consumer_parity.rs"
 [[test]]
 name = "cpi_patterns_parity"
 path = "cpi_patterns_parity.rs"
+
+[[test]]
+name = "realloc_close_parity"
+path = "realloc_close_parity.rs"

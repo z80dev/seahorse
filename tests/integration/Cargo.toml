@@ -139,3 +139,7 @@ path = "oracle_consumer_integration.rs"
 [[test]]
 name = "cpi_patterns_integration"
 path = "cpi_patterns_integration.rs"
+
+[[test]]
+name = "realloc_close_integration"
+path = "realloc_close_integration.rs"
