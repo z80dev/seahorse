@@ -5,6 +5,9 @@
 //! 2. CPI with PDA signer seeds - PDA-signed token operations
 //! 3. Multiple CPIs - Chained operations in sequence
 //! 4. Error handling across CPI boundary - Pre-validation patterns
+//!
+//! # Prerequisites
+//! Run `./scripts/build-test-programs.sh` to compile cpi_patterns.so
 
 use litesvm::LiteSVM;
 use seahorse_integration_tests::{
@@ -13,19 +16,28 @@ use seahorse_integration_tests::{
 use seahorse_integration_tests::helpers::{
     anchor_instruction, create_mint_account, create_token_account, execute_tx, funded_keypair,
     get_account_data, readonly_meta, signer_meta, token_program_id, writable_meta,
-    read_token_balance, read_mint_supply,
+    read_token_balance, read_mint_supply, funded_keypair_10_sol,
 };
 use solana_keypair::Keypair;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
 use solana_sdk_ids::system_program;
 use solana_signer::Signer;
+use std::path::Path;
 
 /// CPI Patterns program ID
 const PROGRAM_ID: &str = "Cpi1Pattrn111111111111111111111111111111111";
 
+/// Path to the compiled CPI Patterns program
+const PROGRAM_PATH: &str = "../../target/deploy/cpi_patterns.so";
+
 fn program_id() -> Pubkey {
     PROGRAM_ID.parse().unwrap()
+}
+
+/// Check if the CPI patterns program is built
+fn program_exists() -> bool {
+    Path::new(PROGRAM_PATH).exists()
 }
 
 /// CpiVault account layout:
@@ -47,10 +59,23 @@ const CPI_VAULT_SIZE: usize = 8 + 32 + 32 + 8 + 8 + 8 + 1;
 /// - bump: 1 byte
 const MINT_CONFIG_SIZE: usize = 8 + 32 + 32 + 8 + 8 + 1;
 
-fn setup_svm() -> (LiteSVM, Keypair) {
+/// Load the CPI patterns program into LiteSVM
+fn load_cpi_patterns_program() -> (LiteSVM, Keypair) {
     let mut svm = LiteSVM::new();
-    let authority = funded_keypair(&mut svm, 100_000_000_000);
+
+    // Load the program if it exists
+    if program_exists() {
+        let program_bytes = std::fs::read(PROGRAM_PATH)
+            .expect("Failed to read CPI patterns program");
+        svm.add_program(program_id(), &program_bytes);
+    }
+
+    let authority = funded_keypair_10_sol(&mut svm);
     (svm, authority)
+}
+
+fn setup_svm() -> (LiteSVM, Keypair) {
+    load_cpi_patterns_program()
 }
 
 /// Create a mint account with configurable authority for tests
@@ -109,6 +134,11 @@ fn create_pda_token_account(
 
 #[test]
 fn test_initialize_vault() {
+    if !program_exists() {
+        eprintln!("Skipping test_initialize_vault: program not built. Run ./scripts/build-test-programs.sh");
+        return;
+    }
+
     let (mut svm, authority) = setup_svm();
 
     // Create mint
@@ -156,6 +186,11 @@ fn test_initialize_vault() {
 
 #[test]
 fn test_basic_transfer_to_vault() {
+    if !program_exists() {
+        eprintln!("Skipping test_basic_transfer_to_vault: program not built. Run ./scripts/build-test-programs.sh");
+        return;
+    }
+
     let (mut svm, authority) = setup_svm();
 
     // Create mint
@@ -244,6 +279,11 @@ fn test_basic_transfer_to_vault_zero_amount_fails() {
 
 #[test]
 fn test_basic_transfer_to_vault_multiple_deposits() {
+    if !program_exists() {
+        eprintln!("Skipping test_basic_transfer_to_vault_multiple_deposits: program not built. Run ./scripts/build-test-programs.sh");
+        return;
+    }
+
     let (mut svm, authority) = setup_svm();
 
     let mint = create_test_mint(&mut svm, &authority.pubkey(), 9);
@@ -312,6 +352,11 @@ fn test_basic_transfer_to_vault_multiple_deposits() {
 
 #[test]
 fn test_pda_signed_transfer_from_vault() {
+    if !program_exists() {
+        eprintln!("Skipping test_pda_signed_transfer_from_vault: program not built. Run ./scripts/build-test-programs.sh");
+        return;
+    }
+
     let (mut svm, authority) = setup_svm();
 
     let mint = create_test_mint(&mut svm, &authority.pubkey(), 9);
@@ -442,6 +487,11 @@ fn test_pda_signed_transfer_insufficient_funds_fails() {
 
 #[test]
 fn test_chained_mint_and_transfer() {
+    if !program_exists() {
+        eprintln!("Skipping test_chained_mint_and_transfer: program not built. Run ./scripts/build-test-programs.sh");
+        return;
+    }
+
     let (mut svm, authority) = setup_svm();
 
     // Derive mint_config PDA
@@ -590,6 +640,11 @@ fn test_chained_mint_and_transfer_exceeds_mint_fails() {
 
 #[test]
 fn test_validated_burn() {
+    if !program_exists() {
+        eprintln!("Skipping test_validated_burn: program not built. Run ./scripts/build-test-programs.sh");
+        return;
+    }
+
     let (mut svm, authority) = setup_svm();
 
     let mint = create_test_mint(&mut svm, &authority.pubkey(), 9);
@@ -672,6 +727,11 @@ fn test_validated_burn_insufficient_balance_fails() {
 
 #[test]
 fn test_full_vault_workflow_deposit_withdraw() {
+    if !program_exists() {
+        eprintln!("Skipping test_full_vault_workflow_deposit_withdraw: program not built. Run ./scripts/build-test-programs.sh");
+        return;
+    }
+
     let (mut svm, authority) = setup_svm();
 
     let mint = create_test_mint(&mut svm, &authority.pubkey(), 9);

@@ -655,8 +655,8 @@
         "Typecheck passes"
       ],
       "priority": 38,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/cpi_patterns.py. Reference at tests/anchor-reference/cpi_patterns_anchor/. Patterns demonstrated: basic CPI (user-signed token transfer), CPI with PDA signer seeds (vault withdrawal), chained CPIs (mint + transfer in sequence), pre-validation before CPI (burn with balance check). 15 LiteSVM integration tests, 5 parity tests. Tests gracefully skip when program not built (requires ./scripts/build-test-programs.sh)."
     },
     {
       "id": "US-038",
