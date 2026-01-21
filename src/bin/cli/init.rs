@@ -217,6 +217,11 @@ pub fn init(args: InitArgs) -> Result<(), Box<dyn Error>> {
             pyth.insert("optional", Value::Boolean(Formatted::new(true)));
             cargo["dependencies"]["pyth-sdk-solana"] = Item::Value(Value::InlineTable(pyth));
 
+            // Pin blake3 to 1.8.2 - v1.8.3+ requires edition 2024 which is unsupported
+            // by the Solana BPF toolchain (requires nightly Cargo)
+            cargo["dependencies"]["blake3"] =
+                Item::Value(Value::String(Formatted::new("=1.8.2".to_string())));
+
             File::create(&cargo_path)?.write_all(cargo.to_string().as_bytes())?;
 
             // Add Anchor seeds feature
