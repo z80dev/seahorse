@@ -620,8 +620,8 @@
         "Typecheck passes"
       ],
       "priority": 36,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "M-of-N multisig wallet with threshold-based transaction execution. Approval PDAs with seeds ['approval', multisig_id, tx_id, approver] prevent double-approval. Transaction PDA tracks approval count. SOL transfers from multisig vault via PDA signer. Supports up to 10 owners. 15 integration tests + 5 parity tests all pass."
     },
     {
       "id": "US-036",

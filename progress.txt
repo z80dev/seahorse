@@ -973,3 +973,45 @@
   - Tie result (yes == no) defaults to rejected (conservative approach)
 ---
 
+## 2026-01-21 - US-035
+- Implemented M-of-N multisig wallet with threshold-based transaction execution
+- Files changed:
+  - examples/multisig.py (new) - Seahorse multisig implementation
+  - tests/compiled-examples/multisig.rs (new) - Compiled Rust output
+  - tests/anchor-reference/multisig_anchor/src/lib.rs (new) - Anchor reference
+  - tests/anchor-reference/multisig_anchor/Cargo.toml (new)
+  - tests/integration/multisig_integration.rs (new) - 15 integration tests
+  - tests/integration/Cargo.toml (modified) - Added multisig_integration test
+  - tests/common/multisig_parity.rs (new) - 5 parity tests
+  - tests/common/Cargo.toml (modified) - Added multisig_parity test
+- Multisig features:
+  - Multisig account: multisig_id, threshold, owner_count, owner_1..owner_10, next_tx_id, bump
+  - Transaction account: multisig, tx_id, proposer, recipient, amount, approval_count, is_executed, bump
+  - Approval account: approver, transaction, approved_at_slot, bump
+  - create_multisig: Creates multisig wallet PDA with N owners and threshold M
+  - propose_transaction: Owner proposes SOL transfer (validates owner, increments tx_id)
+  - approve: Owner approves via individual approval record PDAs (double-approval prevention)
+  - execute: Executes transaction when threshold is met (transfers SOL from vault)
+- Key design decisions:
+  - Approval PDAs with seeds ['approval', multisig_id, tx_id, approver] - prevents double-approval via init failure
+  - Transaction PDA with seeds ['transaction', multisig_id, tx_id] - uses tx_id counter for uniqueness
+  - Multisig PDA with seeds ['multisig', multisig_id] - PDA holds SOL for outgoing transfers
+  - Fixed owner storage: 10 pubkey fields (owner_1..owner_10) since Seahorse doesn't support dynamic arrays
+  - is_owner() helper function checks all 10 owner slots
+  - Supports up to 10 owners, configurable threshold
+- Bug fixes during implementation:
+  - Fixed invalid base58 program ID - original `Mu1ti5ig1111111111111111111111111111111111` (42 chars) was invalid
+  - Generated valid program ID `5h7CmLSs5q2ZfWFns5yUjN6BTYVxVxTNddJ2X1yHnWCd` using solana-keygen
+  - Added missing idl-build feature to Cargo.toml for Anchor 0.32.x compatibility
+- Test coverage:
+  - Integration (15 tests): create_multisig, propose_transaction, approve (single, multiple, double-approval fails), execute (threshold met, threshold not met), full workflow, PDA determinism
+  - Parity (5 tests): multisig_initialization, approval_counting, double_approval_prevention, threshold_enforcement, deterministic_pda_derivation
+- **Learnings for future iterations:**
+  - Base58 program IDs must decode to exactly 32 bytes - use solana-keygen to generate valid addresses
+  - Anchor 0.32.x requires `idl-build = ["anchor-lang/idl-build"]` feature in Cargo.toml
+  - Double-action prevention via PDA init: attempting to init same PDA twice will fail
+  - For M-of-N patterns, use separate Approval PDAs per (tx_id, approver) rather than bitmap tracking
+  - SOL transfers from PDA use Multisig.transfer_lamports() in Seahorse (Account type method)
+  - Fixed-size owner storage is a Seahorse limitation workaround - no Vec/dynamic arrays in account fields
+---
+
