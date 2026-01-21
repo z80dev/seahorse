@@ -289,8 +289,8 @@
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/token_mint.py. Reference at tests/anchor-reference/token_mint_anchor/. 12 LiteSVM integration tests covering create_mint (decimals, multiple authorities), mint_tokens (single/multiple mints, to different recipients, authorization), burn_tokens (partial burn, insufficient funds), and full mint/burn workflow. MintConfig PDA stores mint address, authority, decimals, total_minted, total_burned, and bump. mint_config is the mint authority (program-controlled via PDA signer seeds)."
     },
     {
       "id": "US-017",

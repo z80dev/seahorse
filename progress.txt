@@ -371,3 +371,35 @@
   - Program IDs must be valid Base58 that decodes to 32 bytes - generate with `solana-keygen new`
   - Vault bump stored during init via `vault.bump = vault.bump()` pattern before calling init()
 ---
+
+## 2026-01-21 - US-016
+- Implemented Token Minting program with full test suite
+- Files changed:
+  - examples/token_mint.py (new Seahorse token minting)
+  - tests/anchor-reference/token_mint_anchor/ (Anchor reference program)
+  - tests/integration/token_mint_integration.rs (12 LiteSVM integration tests)
+  - tests/compiled-examples/token_mint.rs (compiled Seahorse output)
+  - tests/integration/Cargo.toml (added token_mint test entry)
+- Token minting features:
+  - create_mint: Creates MintConfig PDA and Token Mint PDA (mint_config as mint authority)
+  - mint_tokens: Mints new tokens using PDA signer (only authority can mint)
+  - burn_tokens: Burns tokens from token account (token owner can burn their tokens)
+  - MintConfig tracks: mint address, authority, decimals, total_minted, total_burned, bump
+- Design notes:
+  - MintConfig PDA (not the mint itself) is the mint authority - standard program-controlled pattern
+  - Mint PDA derived from seeds=['mint', authority]
+  - MintConfig PDA derived from seeds=['mint_config', authority]
+  - Mint signer seeds use mint_config bump for CPI authorization
+- Test coverage (12 tests):
+  - Create mint: Different decimals, different authorities with separate mints
+  - Mint tokens: Single mint, multiple mints, different recipients, zero fails, unauthorized fails
+  - Burn tokens: Partial burn, zero fails, insufficient funds fails
+  - Full workflow: Create → mint → burn → mint → verify totals and supply
+- **Learnings for future iterations:**
+  - Seahorse marks UncheckedAccount as `#[account(mut)]` by default - tests must pass as writable_meta
+  - TokenMint.init(authority=mint_config) sets mint_config PDA as the mint authority
+  - TokenMint.mint(authority=mint_config, signer=['mint_config', authority, bump]) uses PDA signer
+  - TokenMint.burn(authority=owner, holder=source, amount) burns from holder token account
+  - Burn is called on TokenMint not TokenAccount: mint.burn(authority, holder, amount)
+  - Total supply tracked via SPL Token Mint state, totals tracked in MintConfig for analytics
+---
