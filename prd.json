@@ -146,8 +146,8 @@
         "Typecheck passes"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created scripts/build-test-programs.sh that compiles 7 Seahorse examples to Rust and builds them to .so files. 6 programs build successfully - stored_mutables fails due to pre-existing Seahorse compiler issue with Data type. Outputs stored in target/deploy/."
     },
     {
       "id": "US-009",

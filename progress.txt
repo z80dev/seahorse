@@ -20,6 +20,8 @@
 - **LiteSVM API (v0.6.x)**: Uses solana modular crates (solana-account, solana-pubkey, etc.) at 2.2.x. TransactionResult is Result<TransactionMetadata, FailedTransactionMetadata>
 - **anchor-litesvm compatibility**: v0.2.0 requires anchor-lang 0.31.1, v0.3.0 requires anchor-lang 1.0-rc. Neither compatible with Anchor 0.32.1.
 - **TypeScript tests**: Located in tests/ts/, run with `npm test` from that directory. Uses litesvm 0.4.0 npm package with vitest.
+- **Build pipeline**: `scripts/build-test-programs.sh` compiles Seahorse examples → builds .so files → outputs to target/deploy/
+- **Seahorse compiled output format**: Multi-file with markers `// ===== dot/mod.rs =====`, `// ===== dot/program.rs =====`, `// ===== lib.rs =====`
 
 ---
 
@@ -168,5 +170,26 @@
   - vitest globals mode requires `types: ["vitest/globals"]` in tsconfig.json
   - TypeScript test helpers should use `bigint` for lamports to match litesvm JS bindings
   - Run `npm test` from tests/ts/ directory (no root package.json)
+---
+
+## 2026-01-21 - US-008
+- Created test program compilation pipeline: scripts/build-test-programs.sh
+- Files changed: scripts/build-test-programs.sh (new), .gitignore (updated)
+- Changes made:
+  - Script initializes temporary Anchor project in .build-programs/
+  - Compiles Seahorse examples to Rust via seahorse compile
+  - Parses multi-file format (dot/mod.rs, dot/program.rs, lib.rs sections)
+  - Builds each program to .so via anchor build
+  - Auto-detects pyth-sdk-solana dependency from source
+  - Outputs artifacts to target/deploy/
+  - 6 of 7 programs build: calculator, constants, event, fizzbuzz, hello, pyth
+  - stored_mutables fails (pre-existing Seahorse compiler issue with Data type)
+- **Learnings for future iterations:**
+  - Seahorse compiled output format: `// ===== dot/mod.rs =====`, `// ===== dot/program.rs =====`, `// ===== lib.rs =====`
+  - The lib.rs section contains complete seahorse_util module with all required types (Mutable, Empty, SeahorseSigner, etc.)
+  - Use awk to split multi-file compiled output into proper directory structure
+  - Anchor build requires: Cargo.toml, Anchor.toml, and src/ with lib.rs
+  - Pin blake3 to =1.8.2 to avoid edition 2024 requirement
+  - pyth-sdk-solana version 0.10.6 compatible with anchor-lang 0.32.x
 ---
 
