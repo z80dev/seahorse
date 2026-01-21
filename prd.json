@@ -426,8 +426,8 @@
         "Typecheck passes"
       ],
       "priority": 25,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/lending.py. Reference at tests/anchor-reference/lending_anchor/. Implements simplified lending protocol: deposit_collateral (secure borrowing position), borrow (against collateral at 150% ratio), repay (with interest), withdraw_collateral (if ratio maintained). Interest calculated per slot: borrowed * rate * slots / INTEREST_SCALE. Pool PDA uses collateral_mint only. 13 LiteSVM integration tests: pool initialization, deposit/withdraw collateral, borrow within/exceeds ratio, repay partial/full, withdraw with/without debt, interest accrual, error cases (zero amount, insufficient liquidity), full workflow. 5 parity tests: pool initialization state, collateral ratio enforcement (150% = 15000 BPS), interest accrual formula, full lending workflow, deterministic PDA derivation."
     },
     {
       "id": "US-025",
@@ -445,8 +445,8 @@
         "Typecheck passes"
       ],
       "priority": 26,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/vesting.py. Reference at tests/anchor-reference/vesting_anchor/. VestingAccount stores: authority, beneficiary, mint, vault, total_amount, released_amount, start_slot, cliff_slot, end_slot, is_cancelled, bump. Instructions: create_vesting (with cliff_slots + vesting_duration_slots), claim_vested (linear release after cliff), cancel_vesting (authority returns unvested, beneficiary gets vested). Linear vesting formula: vested = total * (current_slot - cliff_slot) / (end_slot - cliff_slot). 14 LiteSVM integration tests: create with/without cliff, claim before/at/after cliff, partial claims, authorization, cancel at various points, full workflow. 5 parity tests: initialization state, cliff enforcement, linear vesting calculation, partial claims work correctly, deterministic PDA derivation. All tests use warp_to_slot() for time-based testing."
     },
     {
       "id": "US-026",

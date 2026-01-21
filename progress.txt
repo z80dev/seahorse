@@ -624,3 +624,84 @@
   - When Seahorse marks an account as `mut` (mutable), tests must use writable_meta() not readonly_meta()
   - Account data offsets must match exactly: disc(8) + fields in order (verify with generated code)
 ---
+
+## 2026-01-21 - US-024
+- Implemented simplified lending protocol with collateralization
+- Files changed:
+  - examples/lending.py (new Seahorse lending program)
+  - tests/anchor-reference/lending_anchor/src/lib.rs (new Anchor reference)
+  - tests/anchor-reference/lending_anchor/Cargo.toml (new)
+  - tests/compiled-examples/lending.rs (compiled Seahorse output)
+  - tests/integration/lending_integration.rs (new - 13 integration tests)
+  - tests/integration/Cargo.toml (added lending_integration test target)
+  - tests/common/lending_parity.rs (new - 5 parity tests)
+  - tests/common/Cargo.toml (added lending_parity test target)
+- Lending features:
+  - Pool account: authority, collateral_mint, borrow_mint, vaults, interest_rate, total_deposited, total_borrowed, last_update_slot, bump
+  - UserPosition account: owner, pool, collateral_deposited, borrowed_amount, last_update_slot, bump
+  - initialize_pool: Creates pool PDA with collateral and borrow vaults (pool is vault authority)
+  - create_user_position: Creates user-specific position tracking account
+  - deposit_collateral: Transfers collateral tokens to vault, updates position
+  - borrow: Borrows tokens against collateral (150% collateral ratio enforced), accrues interest
+  - repay: Repays borrowed amount with accrued interest
+  - withdraw_collateral: Returns collateral (maintains collateral ratio)
+- Collateral ratio: 150% (15000 BPS / 10000 = 1.5x)
+- Interest formula: accrued = borrowed * interest_rate * slots_elapsed / INTEREST_SCALE
+  - INTEREST_SCALE = 1,000,000 (for precision without floating point)
+  - Example: 1000 borrowed * 1000 rate * 100 slots / 1,000,000 = 100 interest
+- Key design decisions:
+  - Pool PDA seeds: ['pool', collateral_mint] (simpler than using both mints)
+  - Collateral vault seeds: ['collateral_vault', collateral_mint]
+  - Borrow vault seeds: ['borrow_vault', collateral_mint]
+  - UserPosition seeds: ['user_position', collateral_mint, user]
+  - Pool is authority for both vaults (can transfer via PDA signer)
+  - Interest accrued before each operation (borrow, repay, withdraw) to maintain accurate debt
+- Test coverage:
+  - Integration (13 tests): initialize_pool, deposit_collateral, borrow within/exceeds ratio, repay partial/full, withdraw with/without debt, interest accrual, error cases, full workflow
+  - Parity (5 tests): pool initialization, collateral ratio enforcement, interest formula, full workflow, deterministic PDA derivation
+- **Learnings for future iterations:**
+  - For lending protocols, calculate accrued interest BEFORE checking collateral ratio or processing new borrows
+  - Use u128 intermediate calculations in Anchor to prevent overflow on interest computation
+  - Collateral ratio check: required_collateral = total_debt * COLLATERAL_RATIO_BPS / BPS_DENOMINATOR
+  - Multiple vaults (collateral + borrow) can share same PDA authority (the pool account)
+  - Repay can be capped to total debt: `if repay_amount > total_debt: repay_amount = total_debt`
+  - For withdrawal checks, verify remaining_collateral >= required_collateral (not just deposited >= amount)
+---
+
+## 2026-01-21 - US-025
+- Implemented token vesting with cliff and linear release schedule
+- Files changed:
+  - examples/vesting.py (new Seahorse vesting program)
+  - tests/anchor-reference/vesting_anchor/src/lib.rs (new Anchor reference)
+  - tests/anchor-reference/vesting_anchor/Cargo.toml (new)
+  - tests/compiled-examples/vesting.rs (compiled Seahorse output)
+  - tests/integration/vesting_integration.rs (new - 14 integration tests)
+  - tests/integration/Cargo.toml (added vesting_integration test target)
+  - tests/common/vesting_parity.rs (new - 5 parity tests)
+  - tests/common/Cargo.toml (added vesting_parity test target)
+- Vesting features:
+  - VestingAccount: authority, beneficiary, mint, vault, total_amount, released_amount, start_slot, cliff_slot, end_slot, is_cancelled, bump
+  - create_vesting: Authority creates vesting schedule with cliff period and linear vesting duration
+  - claim_vested: Beneficiary claims vested tokens after cliff (linear release formula)
+  - cancel_vesting: Authority cancels vesting, vested goes to beneficiary, unvested returns to authority
+- Linear vesting formula: vested = total_amount * (current_slot - cliff_slot) / (end_slot - cliff_slot)
+  - Before cliff: vested = 0
+  - At/after end: vested = total_amount
+  - During vesting: linear interpolation based on slots elapsed since cliff
+- Key design decisions:
+  - Vesting PDA seeds: ['vesting', beneficiary, mint] (per-user per-token)
+  - Vault PDA seeds: ['vesting_vault', beneficiary, mint] with vesting as authority
+  - Supports no cliff (cliff_slots = 0) - linear vesting starts immediately
+  - Partial claims allowed - beneficiary can claim multiple times during vesting period
+  - Cancel distributes fairly: unreleased vested to beneficiary, unvested to authority
+- Test coverage:
+  - Integration (14 tests): create with/without cliff, zero amount/duration fails, claim before cliff fails, claim at cliff, partial claims accumulate correctly, unauthorized claim fails, cancel before cliff/mid-vesting/unauthorized, already cancelled fails, full workflow, claim from cancelled fails
+  - Parity (5 tests): initialization state matches, cliff enforcement identical, linear vesting calculation identical, partial claims work correctly, deterministic PDA derivation
+- **Learnings for future iterations:**
+  - Use `vault = vault.init(...)` not just `vault.init(...)` - Seahorse init returns the initialized account
+  - LiteSVM warp_to_slot() is essential for testing time-based vesting calculations
+  - Anchor uses u128 intermediate for vesting math to prevent overflow on large amounts
+  - Vesting cancellation should calculate vested amount at current time, not just use released_amount
+  - Both Seahorse and Anchor use same linear vesting formula: total * elapsed / period (integer division)
+  - Store bump in vesting account for PDA signer seeds in claim and cancel instructions
+---
