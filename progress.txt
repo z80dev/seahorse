@@ -875,3 +875,40 @@
   - PDA-signed token transfers use `token_account.transfer(authority=listing, ..., signer=['listing', listing_id, bump])`
   - SPL token payment is more versatile than SOL for Seahorse programs due to PDA signer support
 ---
+
+## 2026-01-21 - US-032
+- Implemented comprehensive tests for NFT marketplace program
+- Files changed:
+  - tests/integration/nft_marketplace_integration.rs (new - 17 integration tests)
+  - tests/integration/Cargo.toml (added nft_marketplace_integration test target)
+  - tests/common/nft_marketplace_parity.rs (new - 5 behavior parity tests)
+  - tests/common/Cargo.toml (added nft_marketplace_parity test target)
+  - examples/nft_marketplace.py (fixed invalid program ID)
+  - tests/anchor-reference/nft_marketplace_anchor/src/lib.rs (fixed program ID)
+  - tests/compiled-examples/nft_marketplace.rs (fixed program ID)
+- Test coverage:
+  - Integration tests (17 tests):
+    - list_nft: basic, different listing IDs, zero price fails, non-owner fails
+    - buy_nft: happy path, insufficient payment fails, inactive listing fails
+    - delist_nft: happy path, unauthorized fails, inactive listing fails
+    - update_price: happy path, unauthorized fails, zero price fails, inactive listing fails
+    - full_marketplace_workflow_buy: list → update_price → buy
+    - full_marketplace_workflow_delist: list → delist
+    - pda_derivation_deterministic: verify seeds produce consistent addresses
+  - Parity tests (5 tests):
+    - parity_listing_initialization: verify listing state on creation
+    - parity_buy_transfers_nft_and_payment: verify buy transfers correctly
+    - parity_delist_returns_nft: verify delist returns NFT to seller
+    - parity_update_price_changes_listing: verify price update works
+    - parity_deterministic_pda_derivation: verify PDA consistency
+- Bug fix: Changed program ID from invalid 42-char base58 string to valid 44-char address
+  - Original: 'MKT1NftMarketP1ace111111111111111111111111' (42 chars → 33 bytes)
+  - Fixed: 'Coa8ZSxePf7ZCsDNHE9SRHyZJRWWnZgmanuKVf4ZBM7Q' (44 chars → 32 bytes)
+  - Solana pubkeys must be exactly 32 bytes when decoded from base58
+- **Learnings for future iterations:**
+  - Base58 program IDs must decode to exactly 32 bytes - padding with '1's doesn't work as expected
+  - Test pattern for marketplace: list (escrow NFT) → buy (transfer NFT+payment) or delist (return NFT)
+  - create_empty_token_account_for_user helper is useful for setting up buyer's NFT token account
+  - svm.expire_blockhash() needed between transactions to avoid duplicate signature errors
+  - Full workflow tests verify entire user journey, not just individual operations
+---

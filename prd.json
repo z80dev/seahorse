@@ -563,8 +563,8 @@
         "Typecheck passes"
       ],
       "priority": 33,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "17 LiteSVM integration tests (list, buy, delist, update_price + auth/edge cases), 5 behavior parity tests. Fixed invalid program ID (42 -> 44 chars). All tests pass."
     },
     {
       "id": "US-033",
