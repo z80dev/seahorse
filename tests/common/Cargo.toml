@@ -70,3 +70,7 @@ path = "ata_patterns_parity.rs"
 [[test]]
 name = "escrow_parity"
 path = "escrow_parity.rs"
+
+[[test]]
+name = "token_swap_parity"
+path = "token_swap_parity.rs"

@@ -83,3 +83,7 @@ path = "token_2022_integration.rs"
 [[test]]
 name = "escrow_integration"
 path = "escrow_integration.rs"
+
+[[test]]
+name = "token_swap_integration"
+path = "token_swap_integration.rs"
