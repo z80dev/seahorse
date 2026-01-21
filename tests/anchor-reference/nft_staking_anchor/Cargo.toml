@@ -1,0 +1,21 @@
+[package]
+name = "nft_staking_anchor"
+version = "0.1.0"
+description = "Anchor reference NFT staking program with time-based rewards"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "nft_staking_anchor"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.32.0"
+anchor-spl = { version = "0.32.0", features = ["token"] }
+blake3 = "=1.8.2"
