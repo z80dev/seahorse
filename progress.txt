@@ -435,3 +435,46 @@
   - Account data layout is identical between Seahorse and Anchor (same discriminator, same field order)
   - Both programs derive PDAs identically - use same seeds, same program ID, get same addresses
 ---
+
+## 2026-01-21 - US-018
+- Implemented Token-2022 extensions example demonstrating transfer fee pattern
+- Files changed:
+  - examples/token_2022.py (new Seahorse fee config tracker)
+  - tests/anchor-reference/token_2022_anchor/ (Anchor Token-2022 reference with transfer fee extension)
+  - tests/integration/token_2022_integration.rs (17 LiteSVM integration tests)
+  - tests/compiled-examples/token_2022.rs (compiled Seahorse output)
+  - tests/integration/Cargo.toml (added token_2022 test entry)
+  - prd.json (updated US-018 status to passes: true)
+- Key design decision: Seahorse doesn't have native Token-2022 support
+  - Seahorse only has TokenMint/TokenAccount for legacy SPL Token program
+  - Created FeeConfig PDA to track transfer fee configuration
+  - Anchor reference uses actual spl-token-2022 crate with transfer fee extension
+- Seahorse token_2022.py features:
+  - FeeConfig: Stores mint, authority, decimals, transfer_fee_bps, max_fee, total_fees_collected, bump
+  - initialize_fee_config: Creates fee config PDA for externally-created Token-2022 mint
+  - update_fee_rate: Updates fee rate and max fee (authorization required)
+  - calculate_transfer_fee: Demonstrates fee calculation logic (fee = min(amount * bps / 10000, max_fee))
+  - record_fee_collection: Tracks collected fees after withdrawal
+  - get_fee_info: Displays current fee configuration
+- Anchor reference token_2022_anchor features:
+  - Uses spl-token-2022 v6 with anchor-spl token_2022_extensions feature
+  - create_transfer_fee_mint: Creates Token-2022 mint with transfer fee extension via manual CPI
+  - mint_tokens: Mints using PDA authority via token_interface
+  - get_transfer_fee_config: Reads extension data from mint account
+  - withdraw_withheld_fees: Withdraws collected fees via transfer_fee_instruction
+- Test coverage (17 tests):
+  - Initialize fee config: Success, max fee (100%), exceeds max fails
+  - Update fee rate: Success, unauthorized fails
+  - Calculate fee: Normal calculation, max fee capping
+  - Record collection: Single/multiple recordings, unauthorized fails
+  - Get fee info: Displays configuration
+  - Full workflow: Init → calculate → record → update → verify
+- **Learnings for future iterations:**
+  - Seahorse doesn't support Token-2022 natively - only legacy SPL Token via TokenMint/TokenAccount
+  - To add Token-2022 support to Seahorse would require new builtin types (Token2022Mint, Token2022Account)
+  - anchor-spl feature is "token_2022_extensions" not "token-interface"
+  - spl-token-2022 v6 API: extension::transfer_fee::instruction for fee-related instructions
+  - withdraw_withheld_tokens_from_accounts takes &[&Pubkey] for signers (multisig), use empty for PDA authority
+  - Token-2022 mint needs manual space calculation with ExtensionType::try_calculate_account_len
+  - Token-2022 mint initialization: 1) create_account 2) initialize_transfer_fee_config 3) initialize_mint
+---
