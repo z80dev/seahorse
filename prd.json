@@ -130,8 +130,8 @@
         "Typecheck passes"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created tests/ts/ with litesvm 0.4.0, @coral-xyz/anchor 0.32.0, anchor-litesvm 0.2.1, and vitest 2.1.x. Helpers match Rust: liteSvmWithProgram, fundedKeypair, anchorInstruction, executeTx, discriminator functions, PDA derivation, slot warping. 18 TypeScript tests pass."
     },
     {
       "id": "US-008",
