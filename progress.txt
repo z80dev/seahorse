@@ -558,3 +558,31 @@
   - Newton's method for isqrt: x = (x + n/x) / 2 until x stabilizes
   - Pin blake3 to =1.8.2 in Anchor Cargo.toml to avoid edition 2024 requirement
 ---
+
+## 2026-01-21 - US-022
+- Implemented comprehensive tests for token swap AMM program
+- Files changed:
+  - tests/integration/token_swap_integration.rs (new - 20 integration tests)
+  - tests/integration/Cargo.toml (added token_swap_integration test target)
+  - tests/common/token_swap_parity.rs (new - 5 parity tests)
+  - tests/common/Cargo.toml (added token_swap_parity test target)
+- Integration test coverage (20 tests):
+  - initialize_pool: basic setup, different fees, invalid fee (>=100%) fails
+  - add_liquidity: first deposit (sqrt formula), subsequent (proportional), imbalanced deposit, slippage protection, zero amount fails, deposit too small fails
+  - remove_liquidity: partial withdrawal, full withdrawal, slippage protection, zero amount fails
+  - swap: A to B, B to A, different fee pools, slippage protection, zero amount fails
+  - full_amm_workflow: init → add liquidity → swap → add more → remove liquidity
+  - constant_product_invariant: verify k never decreases across multiple swaps
+- Parity test coverage (5 tests):
+  - pool_initialization: verify pool state, LP mint, pool token accounts
+  - first_liquidity_deposit_formula: verify LP = sqrt(a*b) - MINIMUM_LIQUIDITY
+  - swap_math_constant_product: verify output matches formula with fees
+  - lp_token_accounting: verify LP tokens burned correctly on remove
+  - deterministic_pda_derivation: verify same seeds produce same PDAs
+- **Learnings for future iterations:**
+  - Swap math formula: output = (amount_in * (10000 - fee_bps) * reserve_out) / (reserve_in * 10000 + amount_in * (10000 - fee_bps))
+  - For fee_bps = 30 (0.3%), swapping 1000 tokens from 10000:10000 pool gives 906 tokens
+  - For fee_bps = 10 (0.1%), same swap gives 908 tokens (lower fee = more output)
+  - Always verify k = pool_a * pool_b never decreases (fees increase k)
+  - Use Pubkey::new_unique() instead of invalid base58 strings for test pubkeys
+---

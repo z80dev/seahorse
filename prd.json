@@ -388,8 +388,8 @@
         "Typecheck passes"
       ],
       "priority": 23,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "20 LiteSVM integration tests (tests/integration/token_swap_integration.rs): pool initialization (basic, different fees, invalid fee), add liquidity (first deposit, subsequent, imbalanced, slippage, zero amount, too small), remove liquidity (partial, full, slippage, zero amount), swap (A to B, B to A, different fees, slippage, zero amount), full workflow, constant product invariant. 5 parity tests (tests/common/token_swap_parity.rs): pool initialization state, first deposit LP formula (sqrt(a*b) - 100), swap math constant product formula with fees, LP token accounting, deterministic PDA derivation. Swap math verified: output = (amount_in * (10000 - fee_bps) * reserve_out) / (reserve_in * 10000 + amount_in * (10000 - fee_bps))."
     },
     {
       "id": "US-023",
