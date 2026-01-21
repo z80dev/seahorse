@@ -1,0 +1,23 @@
+[package]
+name = "token_swap_anchor"
+version = "0.1.0"
+description = "Token swap AMM reference program (Anchor version)"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "token_swap_anchor"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = "0.32.0"
+anchor-spl = "0.32.0"
+# Pin blake3 to avoid edition 2024 requirement from v1.8.3+
+blake3 = "=1.8.2"
