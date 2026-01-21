@@ -403,3 +403,35 @@
   - Burn is called on TokenMint not TokenAccount: mint.burn(authority, holder, amount)
   - Total supply tracked via SPL Token Mint state, totals tracked in MintConfig for analytics
 ---
+
+## 2026-01-21 - US-017
+- Enhanced ATA patterns tests with behavior parity tests
+- Files changed:
+  - tests/integration/ata_patterns_integration.rs (fixed account ordering, added parity tests)
+  - tests/compiled-examples/ata_patterns.rs (compiled Seahorse output)
+  - prd.json (updated US-017 status to passes: true)
+- Changes made:
+  - Fixed all instruction account ordering (Seahorse adds rent sysvar, Anchor doesn't)
+  - Seahorse marks mint as `#[account(mut)]` - tests must pass as writable_meta
+  - Added 5 behavior parity tests comparing Seahorse vs Anchor programs:
+    - test_parity_pda_derivation: Verify identical PDAs from same seeds
+    - test_parity_register_user_account_data: Compare UserAccount field values
+    - test_parity_initialize_treasury_account_data: Compare Treasury field values
+    - test_parity_transfer_tokens_balances: Verify identical balance changes
+    - test_parity_error_conditions: Both reject zero-amount transfers
+- Test coverage (18 tests total):
+  - Token account creation: Single user, multiple users
+  - Transfer: Success, zero fails
+  - Register user: Single, multiple users
+  - Initialize treasury: Single admin, multiple admins
+  - Airdrop: Success, unregistered user fails, zero fails
+  - Full workflow: Treasury → register → airdrop → transfer
+  - PDA derivation: Determinism, different seeds
+  - Parity: 5 tests comparing Seahorse vs Anchor
+- **Learnings for future iterations:**
+  - Seahorse account order differs from Anchor: Seahorse adds rent sysvar, places token_program last
+  - Seahorse marks ALL accounts as mut (mint, treasury, user_account) even when logically read-only
+  - Parity tests need different instruction builders for Seahorse vs Anchor (account order, mutability)
+  - Account data layout is identical between Seahorse and Anchor (same discriminator, same field order)
+  - Both programs derive PDAs identically - use same seeds, same program ID, get same addresses
+---

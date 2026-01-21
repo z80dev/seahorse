@@ -307,8 +307,8 @@
         "Typecheck passes"
       ],
       "priority": 18,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/ata_patterns.py. Reference at tests/anchor-reference/ata_patterns_anchor/. 18 LiteSVM integration tests covering: create_user_token_account, transfer_tokens, register_user, initialize_treasury, airdrop_to_user (with PDA authority), and full workflow. 5 parity tests comparing Seahorse vs Anchor behavior for PDA derivation, account data, transfer balances, and error conditions. Note: Uses PDA token accounts instead of true ATAs because Seahorse's `associated=True` generates invalid code."
     },
     {
       "id": "US-018",

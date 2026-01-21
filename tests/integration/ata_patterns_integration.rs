@@ -19,11 +19,9 @@ fn ata_patterns_program_id() -> Pubkey {
     Pubkey::from_str("ATAPtrns1111111111111111111111111111111111AA").unwrap()
 }
 
-/// UserAccount size: discriminator (8) + owner (32) + mint (32) + token_account (32) + bump (1) + is_registered (1)
-const USER_ACCOUNT_SIZE: usize = 8 + 32 + 32 + 32 + 1 + 1;
-
-/// Treasury size: discriminator (8) + admin (32) + mint (32) + treasury_token_account (32) + bump (1)
-const TREASURY_SIZE: usize = 8 + 32 + 32 + 32 + 1;
+// Note: Account sizes documented in Anchor reference program:
+// - UserAccount: discriminator (8) + owner (32) + mint (32) + token_account (32) + bump (1) + is_registered (1) = 106 bytes
+// - Treasury: discriminator (8) + admin (32) + mint (32) + treasury_token_account (32) + bump (1) = 105 bytes
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -133,11 +131,12 @@ fn test_create_user_token_account() {
         "create_user_token_account",
         &[],
         vec![
-            signer_meta(user.pubkey()),          // user
-            readonly_meta(mint),                  // mint
-            writable_meta(user_token_pda),        // user_token_account
-            readonly_meta(token_program_id()),    // token_program
-            readonly_meta(system_program::id()),  // system_program
+            signer_meta(user.pubkey()),                           // user
+            writable_meta(mint),                                  // mint (Seahorse marks mints as mut)
+            writable_meta(user_token_pda),                        // user_token_account
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),    // rent
+            readonly_meta(system_program::id()),                  // system_program
+            readonly_meta(token_program_id()),                    // token_program
         ],
     );
 
@@ -174,10 +173,11 @@ fn test_create_user_token_account_multiple_users() {
         &[],
         vec![
             signer_meta(user1.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user1_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     let result1 = execute_tx(&mut svm, ix1, &user1, &[&user1]);
@@ -191,10 +191,11 @@ fn test_create_user_token_account_multiple_users() {
         &[],
         vec![
             signer_meta(user2.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user2_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     let result2 = execute_tx(&mut svm, ix2, &user2, &[&user2]);
@@ -236,7 +237,7 @@ fn test_transfer_tokens() {
         &amount.to_le_bytes(),
         vec![
             signer_meta(sender.pubkey()),           // sender
-            readonly_meta(mint),                    // mint
+            writable_meta(mint),                    // mint (Seahorse marks as mut)
             writable_meta(sender_token_pda),        // sender_token_account
             writable_meta(recipient_token_pda),     // recipient_token_account
             readonly_meta(token_program_id()),      // token_program
@@ -281,7 +282,7 @@ fn test_transfer_tokens_zero_fails() {
         &amount.to_le_bytes(),
         vec![
             signer_meta(sender.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(sender_token_pda),
             writable_meta(recipient_token_pda),
             readonly_meta(token_program_id()),
@@ -312,12 +313,13 @@ fn test_register_user() {
         "register_user",
         &[],
         vec![
-            signer_meta(user.pubkey()),           // user
-            readonly_meta(mint),                   // mint
-            writable_meta(user_account_pda),       // user_account
-            writable_meta(user_token_pda),         // user_token_account
-            readonly_meta(token_program_id()),     // token_program
-            readonly_meta(system_program::id()),   // system_program
+            signer_meta(user.pubkey()),                           // user
+            writable_meta(mint),                                  // mint (Seahorse marks as mut)
+            writable_meta(user_account_pda),                      // user_account
+            writable_meta(user_token_pda),                        // user_token_account
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),    // rent
+            readonly_meta(system_program::id()),                  // system_program
+            readonly_meta(token_program_id()),                    // token_program
         ],
     );
 
@@ -363,11 +365,12 @@ fn test_register_multiple_users() {
         &[],
         vec![
             signer_meta(user1.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user1_account_pda),
             writable_meta(user1_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     let result1 = execute_tx(&mut svm, ix1, &user1, &[&user1]);
@@ -381,11 +384,12 @@ fn test_register_multiple_users() {
         &[],
         vec![
             signer_meta(user2.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user2_account_pda),
             writable_meta(user2_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     let result2 = execute_tx(&mut svm, ix2, &user2, &[&user2]);
@@ -422,12 +426,13 @@ fn test_initialize_treasury() {
         "initialize_treasury",
         &[],
         vec![
-            signer_meta(admin.pubkey()),           // admin
-            readonly_meta(mint),                    // mint
-            writable_meta(treasury_pda),            // treasury
-            writable_meta(treasury_token_pda),      // treasury_token_account
-            readonly_meta(token_program_id()),      // token_program
-            readonly_meta(system_program::id()),    // system_program
+            signer_meta(admin.pubkey()),                          // admin
+            writable_meta(mint),                                  // mint (Seahorse marks as mut)
+            writable_meta(treasury_pda),                          // treasury
+            writable_meta(treasury_token_pda),                    // treasury_token_account
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),    // rent
+            readonly_meta(system_program::id()),                  // system_program
+            readonly_meta(token_program_id()),                    // token_program
         ],
     );
 
@@ -476,11 +481,12 @@ fn test_initialize_treasury_multiple_admins() {
         &[],
         vec![
             signer_meta(admin1.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(treasury1_pda),
             writable_meta(treasury1_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     let result1 = execute_tx(&mut svm, ix1, &admin1, &[&admin1]);
@@ -494,11 +500,12 @@ fn test_initialize_treasury_multiple_admins() {
         &[],
         vec![
             signer_meta(admin2.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(treasury2_pda),
             writable_meta(treasury2_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     let result2 = execute_tx(&mut svm, ix2, &admin2, &[&admin2]);
@@ -537,11 +544,12 @@ fn test_airdrop_to_user() {
         &[],
         vec![
             signer_meta(admin.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(treasury_pda),
             writable_meta(treasury_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     execute_tx(&mut svm, init_treasury_ix, &admin, &[&admin]).unwrap();
@@ -558,11 +566,12 @@ fn test_airdrop_to_user() {
         &[],
         vec![
             signer_meta(user.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user_account_pda),
             writable_meta(user_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     execute_tx(&mut svm, register_ix, &user, &[&user]).unwrap();
@@ -575,11 +584,11 @@ fn test_airdrop_to_user() {
         "airdrop_to_user",
         &amount.to_le_bytes(),
         vec![
-            signer_meta(admin.pubkey()),       // admin
-            readonly_meta(mint),                // mint
-            readonly_meta(treasury_pda),        // treasury
+            signer_meta(admin.pubkey()),        // admin
+            writable_meta(mint),                // mint (Seahorse marks as mut)
+            writable_meta(treasury_pda),        // treasury (marked as mut in Seahorse)
             writable_meta(treasury_token_pda),  // treasury_token_account
-            readonly_meta(user_account_pda),    // user_account
+            writable_meta(user_account_pda),    // user_account (marked as mut in Seahorse)
             writable_meta(user_token_pda),      // user_token_account
             readonly_meta(token_program_id()),  // token_program
         ],
@@ -617,11 +626,12 @@ fn test_airdrop_to_unregistered_user_fails() {
         &[],
         vec![
             signer_meta(admin.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(treasury_pda),
             writable_meta(treasury_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     execute_tx(&mut svm, init_treasury_ix, &admin, &[&admin]).unwrap();
@@ -644,10 +654,10 @@ fn test_airdrop_to_unregistered_user_fails() {
         &amount.to_le_bytes(),
         vec![
             signer_meta(admin.pubkey()),
-            readonly_meta(mint),
-            readonly_meta(treasury_pda),
+            writable_meta(mint),
+            writable_meta(treasury_pda),
             writable_meta(treasury_token_pda),
-            readonly_meta(user_account_pda), // This account doesn't exist
+            writable_meta(user_account_pda), // This account doesn't exist
             writable_meta(user_token_pda),
             readonly_meta(token_program_id()),
         ],
@@ -678,11 +688,12 @@ fn test_airdrop_zero_fails() {
         &[],
         vec![
             signer_meta(admin.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(treasury_pda),
             writable_meta(treasury_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     execute_tx(&mut svm, init_treasury_ix, &admin, &[&admin]).unwrap();
@@ -699,11 +710,12 @@ fn test_airdrop_zero_fails() {
         &[],
         vec![
             signer_meta(user.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user_account_pda),
             writable_meta(user_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     execute_tx(&mut svm, register_ix, &user, &[&user]).unwrap();
@@ -717,10 +729,10 @@ fn test_airdrop_zero_fails() {
         &amount.to_le_bytes(),
         vec![
             signer_meta(admin.pubkey()),
-            readonly_meta(mint),
-            readonly_meta(treasury_pda),
+            writable_meta(mint),
+            writable_meta(treasury_pda),
             writable_meta(treasury_token_pda),
-            readonly_meta(user_account_pda),
+            writable_meta(user_account_pda),
             writable_meta(user_token_pda),
             readonly_meta(token_program_id()),
         ],
@@ -757,11 +769,12 @@ fn test_full_token_workflow() {
         &[],
         vec![
             signer_meta(admin.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(treasury_pda),
             writable_meta(treasury_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     execute_tx(&mut svm, init_treasury_ix, &admin, &[&admin]).unwrap();
@@ -778,11 +791,12 @@ fn test_full_token_workflow() {
         &[],
         vec![
             signer_meta(user1.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user1_account_pda),
             writable_meta(user1_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     execute_tx(&mut svm, register_ix, &user1, &[&user1]).unwrap();
@@ -795,10 +809,10 @@ fn test_full_token_workflow() {
         &1000u64.to_le_bytes(),
         vec![
             signer_meta(admin.pubkey()),
-            readonly_meta(mint),
-            readonly_meta(treasury_pda),
+            writable_meta(mint),
+            writable_meta(treasury_pda),
             writable_meta(treasury_token_pda),
-            readonly_meta(user1_account_pda),
+            writable_meta(user1_account_pda),
             writable_meta(user1_token_pda),
             readonly_meta(token_program_id()),
         ],
@@ -813,10 +827,11 @@ fn test_full_token_workflow() {
         &[],
         vec![
             signer_meta(user2.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user2_token_pda),
-            readonly_meta(token_program_id()),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
             readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
         ],
     );
     execute_tx(&mut svm, create_user2_ix, &user2, &[&user2]).unwrap();
@@ -829,7 +844,7 @@ fn test_full_token_workflow() {
         &500u64.to_le_bytes(),
         vec![
             signer_meta(user1.pubkey()),
-            readonly_meta(mint),
+            writable_meta(mint),
             writable_meta(user1_token_pda),
             writable_meta(user2_token_pda),
             readonly_meta(token_program_id()),
@@ -874,4 +889,331 @@ fn test_pda_address_derivation() {
     let (_, other_mint) = setup_mint(&mut svm);
     let (other_mint_pda, _) = derive_user_token_pda(&user.pubkey(), &other_mint);
     assert_ne!(expected_token_pda, other_mint_pda, "Different mints should have different PDAs");
+}
+
+// =============================================================================
+// BEHAVIOR PARITY TESTS (Seahorse vs Anchor Reference)
+// =============================================================================
+//
+// These tests verify that the Seahorse-generated program behaves identically
+// to the hand-written Anchor reference program.
+
+/// Load the Anchor reference program for parity testing
+fn load_anchor_reference_program() -> litesvm::LiteSVM {
+    let program_id = ata_patterns_program_id();
+    let program_bytes = std::fs::read("../../target/deploy/ata_patterns_anchor.so")
+        .expect("Failed to read ata_patterns_anchor.so - run ./scripts/build-test-programs.sh first");
+
+    let mut svm = litesvm::LiteSVM::new();
+    svm.add_program(program_id, &program_bytes);
+    svm
+}
+
+#[test]
+fn test_parity_pda_derivation() {
+    // Both programs should derive the same PDAs from identical seeds
+    let mut seahorse_svm = load_ata_patterns_program();
+    let mut anchor_svm = load_anchor_reference_program();
+
+    let (_, mint) = setup_mint(&mut seahorse_svm);
+    let seahorse_user = funded_keypair_10_sol(&mut seahorse_svm);
+
+    // Set up identical state in Anchor SVM
+    let anchor_mint_account = create_mint_account(&seahorse_user.pubkey(), 6);
+    anchor_svm.set_account(mint, anchor_mint_account).unwrap();
+    anchor_svm.airdrop(&seahorse_user.pubkey(), 10 * solana_native_token::LAMPORTS_PER_SOL).unwrap();
+
+    // Derive PDAs using the same seeds
+    let (seahorse_user_token, seahorse_bump) = derive_user_token_pda(&seahorse_user.pubkey(), &mint);
+    let (seahorse_user_account, _) = derive_user_account_pda(&seahorse_user.pubkey(), &mint);
+    let (seahorse_treasury, _) = derive_treasury_pda(&seahorse_user.pubkey(), &mint);
+    let (seahorse_treasury_token, _) = derive_treasury_token_pda(&seahorse_user.pubkey(), &mint);
+
+    // PDAs should be identical since they use the same program ID and seeds
+    let (anchor_user_token, anchor_bump) = find_pda(
+        &[b"user_token", seahorse_user.pubkey().as_ref(), mint.as_ref()],
+        &ata_patterns_program_id(),
+    );
+    assert_eq!(seahorse_user_token, anchor_user_token, "User token PDAs should match");
+    assert_eq!(seahorse_bump, anchor_bump, "Bumps should match");
+
+    let (anchor_user_account, _) = find_pda(
+        &[b"user_account", seahorse_user.pubkey().as_ref(), mint.as_ref()],
+        &ata_patterns_program_id(),
+    );
+    assert_eq!(seahorse_user_account, anchor_user_account, "User account PDAs should match");
+
+    let (anchor_treasury, _) = find_pda(
+        &[b"treasury", seahorse_user.pubkey().as_ref(), mint.as_ref()],
+        &ata_patterns_program_id(),
+    );
+    assert_eq!(seahorse_treasury, anchor_treasury, "Treasury PDAs should match");
+
+    let (anchor_treasury_token, _) = find_pda(
+        &[b"treasury_token", seahorse_user.pubkey().as_ref(), mint.as_ref()],
+        &ata_patterns_program_id(),
+    );
+    assert_eq!(seahorse_treasury_token, anchor_treasury_token, "Treasury token PDAs should match");
+}
+
+#[test]
+fn test_parity_register_user_account_data() {
+    // Both programs should produce identical UserAccount data
+    let program_id = ata_patterns_program_id();
+
+    // Test Seahorse program
+    let mut seahorse_svm = load_ata_patterns_program();
+    let (_, mint) = setup_mint(&mut seahorse_svm);
+    let user = funded_keypair_10_sol(&mut seahorse_svm);
+    let (user_account_pda, _) = derive_user_account_pda(&user.pubkey(), &mint);
+    let (user_token_pda, _) = derive_user_token_pda(&user.pubkey(), &mint);
+
+    let seahorse_ix = anchor_instruction(
+        program_id,
+        "register_user",
+        &[],
+        vec![
+            signer_meta(user.pubkey()),
+            writable_meta(mint),
+            writable_meta(user_account_pda),
+            writable_meta(user_token_pda),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
+            readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
+        ],
+    );
+    execute_tx(&mut seahorse_svm, seahorse_ix, &user, &[&user]).unwrap();
+    let seahorse_account = seahorse_svm.get_account(&user_account_pda).unwrap();
+
+    // Test Anchor program
+    let mut anchor_svm = load_anchor_reference_program();
+    let anchor_mint_account = create_mint_account(&user.pubkey(), 6);
+    anchor_svm.set_account(mint, anchor_mint_account).unwrap();
+    anchor_svm.airdrop(&user.pubkey(), 10 * solana_native_token::LAMPORTS_PER_SOL).unwrap();
+
+    let anchor_ix = anchor_instruction(
+        program_id,
+        "register_user",
+        &[],
+        vec![
+            signer_meta(user.pubkey()),
+            readonly_meta(mint),
+            writable_meta(user_account_pda),
+            writable_meta(user_token_pda),
+            readonly_meta(token_program_id()),
+            readonly_meta(system_program::id()),
+        ],
+    );
+    execute_tx(&mut anchor_svm, anchor_ix, &user, &[&user]).unwrap();
+    let anchor_account = anchor_svm.get_account(&user_account_pda).unwrap();
+
+    // Compare account data (after discriminator)
+    assert_eq!(seahorse_account.owner, anchor_account.owner, "Account owners should match");
+
+    // Compare stored values
+    let seahorse_owner = read_user_account_owner(&seahorse_account.data);
+    let anchor_owner = read_user_account_owner(&anchor_account.data);
+    assert_eq!(seahorse_owner, anchor_owner, "Stored owners should match");
+
+    let seahorse_registered = read_user_account_is_registered(&seahorse_account.data);
+    let anchor_registered = read_user_account_is_registered(&anchor_account.data);
+    assert_eq!(seahorse_registered, anchor_registered, "Registration status should match");
+
+    let seahorse_token_account = read_user_account_token_account(&seahorse_account.data);
+    let anchor_token_account = read_user_account_token_account(&anchor_account.data);
+    assert_eq!(seahorse_token_account, anchor_token_account, "Token account addresses should match");
+}
+
+#[test]
+fn test_parity_initialize_treasury_account_data() {
+    // Both programs should produce identical Treasury data
+    let program_id = ata_patterns_program_id();
+
+    // Test Seahorse program
+    let mut seahorse_svm = load_ata_patterns_program();
+    let (_, mint) = setup_mint(&mut seahorse_svm);
+    let admin = funded_keypair_10_sol(&mut seahorse_svm);
+    let (treasury_pda, _) = derive_treasury_pda(&admin.pubkey(), &mint);
+    let (treasury_token_pda, _) = derive_treasury_token_pda(&admin.pubkey(), &mint);
+
+    let seahorse_ix = anchor_instruction(
+        program_id,
+        "initialize_treasury",
+        &[],
+        vec![
+            signer_meta(admin.pubkey()),
+            writable_meta(mint),
+            writable_meta(treasury_pda),
+            writable_meta(treasury_token_pda),
+            readonly_meta(solana_sdk_ids::sysvar::rent::id()),
+            readonly_meta(system_program::id()),
+            readonly_meta(token_program_id()),
+        ],
+    );
+    execute_tx(&mut seahorse_svm, seahorse_ix, &admin, &[&admin]).unwrap();
+    let seahorse_treasury = seahorse_svm.get_account(&treasury_pda).unwrap();
+
+    // Test Anchor program
+    let mut anchor_svm = load_anchor_reference_program();
+    let anchor_mint_account = create_mint_account(&admin.pubkey(), 6);
+    anchor_svm.set_account(mint, anchor_mint_account).unwrap();
+    anchor_svm.airdrop(&admin.pubkey(), 10 * solana_native_token::LAMPORTS_PER_SOL).unwrap();
+
+    let anchor_ix = anchor_instruction(
+        program_id,
+        "initialize_treasury",
+        &[],
+        vec![
+            signer_meta(admin.pubkey()),
+            readonly_meta(mint),
+            writable_meta(treasury_pda),
+            writable_meta(treasury_token_pda),
+            readonly_meta(token_program_id()),
+            readonly_meta(system_program::id()),
+        ],
+    );
+    execute_tx(&mut anchor_svm, anchor_ix, &admin, &[&admin]).unwrap();
+    let anchor_treasury = anchor_svm.get_account(&treasury_pda).unwrap();
+
+    // Compare account data
+    assert_eq!(seahorse_treasury.owner, anchor_treasury.owner, "Account owners should match");
+
+    // Compare stored values
+    let seahorse_admin = read_treasury_admin(&seahorse_treasury.data);
+    let anchor_admin = read_treasury_admin(&anchor_treasury.data);
+    assert_eq!(seahorse_admin, anchor_admin, "Stored admins should match");
+
+    let seahorse_token = read_treasury_token_account_address(&seahorse_treasury.data);
+    let anchor_token = read_treasury_token_account_address(&anchor_treasury.data);
+    assert_eq!(seahorse_token, anchor_token, "Treasury token account addresses should match");
+}
+
+#[test]
+fn test_parity_transfer_tokens_balances() {
+    // Both programs should produce identical balance changes after transfer
+    let program_id = ata_patterns_program_id();
+
+    let sender = Keypair::new();
+    let recipient = Keypair::new();
+    let mint = Keypair::new();
+    let (sender_token_pda, _) = derive_user_token_pda(&sender.pubkey(), &mint.pubkey());
+    let (recipient_token_pda, _) = derive_user_token_pda(&recipient.pubkey(), &mint.pubkey());
+
+    // Test Seahorse program
+    let mut seahorse_svm = load_ata_patterns_program();
+    let mint_account = create_mint_account(&sender.pubkey(), 6);
+    seahorse_svm.set_account(mint.pubkey(), mint_account.clone()).unwrap();
+    seahorse_svm.airdrop(&sender.pubkey(), 10 * solana_native_token::LAMPORTS_PER_SOL).unwrap();
+    let sender_token_account = create_token_account(&sender.pubkey(), &mint.pubkey(), 1000);
+    seahorse_svm.set_account(sender_token_pda, sender_token_account.clone()).unwrap();
+    let recipient_token_account = create_token_account(&recipient.pubkey(), &mint.pubkey(), 0);
+    seahorse_svm.set_account(recipient_token_pda, recipient_token_account.clone()).unwrap();
+
+    let amount: u64 = 500;
+    let seahorse_ix = anchor_instruction(
+        program_id,
+        "transfer_tokens",
+        &amount.to_le_bytes(),
+        vec![
+            signer_meta(sender.pubkey()),
+            writable_meta(mint.pubkey()),
+            writable_meta(sender_token_pda),
+            writable_meta(recipient_token_pda),
+            readonly_meta(token_program_id()),
+        ],
+    );
+    execute_tx(&mut seahorse_svm, seahorse_ix, &sender, &[&sender]).unwrap();
+
+    let seahorse_sender_balance = read_token_balance(&seahorse_svm.get_account(&sender_token_pda).unwrap().data);
+    let seahorse_recipient_balance = read_token_balance(&seahorse_svm.get_account(&recipient_token_pda).unwrap().data);
+
+    // Test Anchor program
+    let mut anchor_svm = load_anchor_reference_program();
+    anchor_svm.set_account(mint.pubkey(), mint_account).unwrap();
+    anchor_svm.airdrop(&sender.pubkey(), 10 * solana_native_token::LAMPORTS_PER_SOL).unwrap();
+    anchor_svm.set_account(sender_token_pda, sender_token_account).unwrap();
+    anchor_svm.set_account(recipient_token_pda, recipient_token_account).unwrap();
+
+    let anchor_ix = anchor_instruction(
+        program_id,
+        "transfer_tokens",
+        &amount.to_le_bytes(),
+        vec![
+            signer_meta(sender.pubkey()),
+            readonly_meta(mint.pubkey()),
+            writable_meta(sender_token_pda),
+            writable_meta(recipient_token_pda),
+            readonly_meta(token_program_id()),
+        ],
+    );
+    execute_tx(&mut anchor_svm, anchor_ix, &sender, &[&sender]).unwrap();
+
+    let anchor_sender_balance = read_token_balance(&anchor_svm.get_account(&sender_token_pda).unwrap().data);
+    let anchor_recipient_balance = read_token_balance(&anchor_svm.get_account(&recipient_token_pda).unwrap().data);
+
+    // Compare balances
+    assert_eq!(seahorse_sender_balance, anchor_sender_balance, "Sender balances should match");
+    assert_eq!(seahorse_recipient_balance, anchor_recipient_balance, "Recipient balances should match");
+    assert_eq!(seahorse_sender_balance, 500, "Sender should have 500 left");
+    assert_eq!(seahorse_recipient_balance, 500, "Recipient should have 500");
+}
+
+#[test]
+fn test_parity_error_conditions() {
+    // Both programs should fail on the same error conditions
+    let program_id = ata_patterns_program_id();
+
+    let sender = Keypair::new();
+    let recipient = Keypair::new();
+    let mint = Keypair::new();
+    let (sender_token_pda, _) = derive_user_token_pda(&sender.pubkey(), &mint.pubkey());
+    let (recipient_token_pda, _) = derive_user_token_pda(&recipient.pubkey(), &mint.pubkey());
+
+    // Test Seahorse - transfer 0 should fail
+    let mut seahorse_svm = load_ata_patterns_program();
+    let mint_account = create_mint_account(&sender.pubkey(), 6);
+    seahorse_svm.set_account(mint.pubkey(), mint_account.clone()).unwrap();
+    seahorse_svm.airdrop(&sender.pubkey(), 10 * solana_native_token::LAMPORTS_PER_SOL).unwrap();
+    let sender_token_account = create_token_account(&sender.pubkey(), &mint.pubkey(), 1000);
+    seahorse_svm.set_account(sender_token_pda, sender_token_account.clone()).unwrap();
+    let recipient_token_account = create_token_account(&recipient.pubkey(), &mint.pubkey(), 0);
+    seahorse_svm.set_account(recipient_token_pda, recipient_token_account.clone()).unwrap();
+
+    let amount: u64 = 0;
+    let seahorse_ix = anchor_instruction(
+        program_id,
+        "transfer_tokens",
+        &amount.to_le_bytes(),
+        vec![
+            signer_meta(sender.pubkey()),
+            writable_meta(mint.pubkey()),
+            writable_meta(sender_token_pda),
+            writable_meta(recipient_token_pda),
+            readonly_meta(token_program_id()),
+        ],
+    );
+    let seahorse_result = execute_tx(&mut seahorse_svm, seahorse_ix, &sender, &[&sender]);
+    assert!(seahorse_result.is_err(), "Seahorse should fail on zero transfer");
+
+    // Test Anchor - transfer 0 should fail
+    let mut anchor_svm = load_anchor_reference_program();
+    anchor_svm.set_account(mint.pubkey(), mint_account).unwrap();
+    anchor_svm.airdrop(&sender.pubkey(), 10 * solana_native_token::LAMPORTS_PER_SOL).unwrap();
+    anchor_svm.set_account(sender_token_pda, sender_token_account).unwrap();
+    anchor_svm.set_account(recipient_token_pda, recipient_token_account).unwrap();
+
+    let anchor_ix = anchor_instruction(
+        program_id,
+        "transfer_tokens",
+        &amount.to_le_bytes(),
+        vec![
+            signer_meta(sender.pubkey()),
+            readonly_meta(mint.pubkey()),
+            writable_meta(sender_token_pda),
+            writable_meta(recipient_token_pda),
+            readonly_meta(token_program_id()),
+        ],
+    );
+    let anchor_result = execute_tx(&mut anchor_svm, anchor_ix, &sender, &[&sender]);
+    assert!(anchor_result.is_err(), "Anchor should fail on zero transfer");
 }
