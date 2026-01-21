@@ -31,6 +31,11 @@ solana-transaction = "2.2"
 # For Borsh serialization (matching Anchor's version)
 borsh = "0.10"
 
+# SPL Token for token vault tests
+spl-token = "7.0"
+spl-associated-token-account = "6.0"
+solana-program-pack = "2.2"
+
 # Note: anchor-litesvm 0.2.0 requires anchor-lang 0.31.1 which differs from
 # Seahorse's anchor-lang 0.32.1. We'll implement helpers without anchor-litesvm
 # for SDK compatibility. Future work can add anchor-litesvm when versions align.
@@ -58,3 +63,7 @@ path = "pda_patterns_integration.rs"
 [[test]]
 name = "init_patterns_integration"
 path = "init_patterns_integration.rs"
+
+[[test]]
+name = "token_vault_integration"
+path = "token_vault_integration.rs"

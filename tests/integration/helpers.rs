@@ -180,6 +180,143 @@ pub const CALCULATOR_SIZE: usize = 8 + 32 + 8; // discriminator + owner + displa
 /// Fields: count (8 bytes)
 pub const COUNTER_SIZE: usize = 8 + 8; // discriminator + count
 
+// =============================================================================
+// SPL TOKEN HELPERS
+// =============================================================================
+
+use spl_associated_token_account::get_associated_token_address;
+use spl_token::solana_program::program_pack::Pack;
+use spl_token::solana_program::program_option::COption;
+
+/// SPL Token Mint account size (82 bytes)
+pub const MINT_SIZE: usize = 82;
+
+/// SPL Token Account size (165 bytes)
+pub const TOKEN_ACCOUNT_SIZE: usize = 165;
+
+/// SPL Token program ID
+pub fn token_program_id() -> Pubkey {
+    spl_token::id()
+}
+
+/// SPL Associated Token Account program ID
+pub fn associated_token_program_id() -> Pubkey {
+    spl_associated_token_account::id()
+}
+
+/// Create a mint account for LiteSVM
+/// This creates the raw account data that represents an SPL Token mint
+pub fn create_mint_account(
+    authority: &Pubkey,
+    decimals: u8,
+) -> Account {
+    let rent = Rent::default();
+
+    // Create mint state
+    let mint = spl_token::state::Mint {
+        mint_authority: COption::Some(*authority),
+        supply: 0,
+        decimals,
+        is_initialized: true,
+        freeze_authority: COption::None,
+    };
+
+    // Pack the mint into bytes
+    let mut data = vec![0u8; MINT_SIZE];
+    spl_token::state::Mint::pack(mint, &mut data).unwrap();
+
+    Account {
+        lamports: rent.minimum_balance(MINT_SIZE),
+        data,
+        owner: spl_token::id(),
+        executable: false,
+        rent_epoch: 0,
+    }
+}
+
+/// Create a token account for LiteSVM
+/// This creates the raw account data that represents an SPL Token account
+pub fn create_token_account(
+    owner: &Pubkey,
+    mint: &Pubkey,
+    amount: u64,
+) -> Account {
+    let rent = Rent::default();
+
+    // Create token account state
+    let token_account = spl_token::state::Account {
+        mint: *mint,
+        owner: *owner,
+        amount,
+        delegate: COption::None,
+        state: spl_token::state::AccountState::Initialized,
+        is_native: COption::None,
+        delegated_amount: 0,
+        close_authority: COption::None,
+    };
+
+    // Pack the account into bytes
+    let mut data = vec![0u8; TOKEN_ACCOUNT_SIZE];
+    spl_token::state::Account::pack(token_account, &mut data).unwrap();
+
+    Account {
+        lamports: rent.minimum_balance(TOKEN_ACCOUNT_SIZE),
+        data,
+        owner: spl_token::id(),
+        executable: false,
+        rent_epoch: 0,
+    }
+}
+
+/// Get the Associated Token Address for a wallet and mint
+pub fn get_ata(wallet: &Pubkey, mint: &Pubkey) -> Pubkey {
+    get_associated_token_address(wallet, mint)
+}
+
+/// Create instruction to create an associated token account
+pub fn create_ata_instruction(
+    payer: &Pubkey,
+    wallet: &Pubkey,
+    mint: &Pubkey,
+) -> Instruction {
+    spl_associated_token_account::instruction::create_associated_token_account(
+        payer,
+        wallet,
+        mint,
+        &spl_token::id(),
+    )
+}
+
+/// Create instruction to mint tokens to a token account
+pub fn mint_to_instruction(
+    mint: &Pubkey,
+    destination: &Pubkey,
+    mint_authority: &Pubkey,
+    amount: u64,
+) -> Instruction {
+    spl_token::instruction::mint_to(
+        &spl_token::id(),
+        mint,
+        destination,
+        mint_authority,
+        &[],
+        amount,
+    )
+    .unwrap()
+}
+
+/// Read token account balance from raw account data
+pub fn read_token_balance(data: &[u8]) -> u64 {
+    let account = spl_token::state::Account::unpack(data).unwrap();
+    account.amount
+}
+
+/// Read mint supply from raw account data
+pub fn read_mint_supply(data: &[u8]) -> u64 {
+    let mint = spl_token::state::Mint::unpack(data).unwrap();
+    mint.supply
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
