@@ -162,8 +162,8 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created tests/common/ crate with CompareContext, InstructionBuilder, account diffing, and colored report output. All 25 unit tests pass. Typecheck passes."
     },
     {
       "id": "US-010",

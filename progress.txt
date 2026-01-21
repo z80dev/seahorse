@@ -193,3 +193,21 @@
   - pyth-sdk-solana version 0.10.6 compatible with anchor-lang 0.32.x
 ---
 
+## 2026-01-21 - US-009
+- Implemented behavior comparison framework in tests/common/
+- Files changed: tests/common/Cargo.toml, lib.rs, compare.rs, tests.rs, .gitignore
+- Key components:
+  - CompareContext: Manages dual LiteSVM instances for Seahorse/Anchor programs
+  - InstructionBuilder: Template-based instruction building for both programs
+  - Account state diffing: LamportsDiff, DataDiff, DataSizeDiff, OwnerDiff, ExistsDiff
+  - CompareResult with colored report output for divergence diagnosis
+  - execute_sequence_and_compare() for multi-instruction testing
+- 25 unit tests pass, typecheck passes
+- **Learnings for future iterations:**
+  - Use standalone functions instead of methods when borrowing mutable SVM instances to avoid borrow checker issues
+  - LiteSVM 0.6.x send_transaction returns Result<TransactionMetadata, FailedTransactionMetadata> - both have .logs field
+  - Account diffing should compare lamports first (most common failure), then owner, then size, then data bytes
+  - Colored crate 2.x provides .red(), .green(), .cyan(), etc. for terminal output
+  - Clone LiteSVM instances for "dry run" comparison before committing changes to real SVMs
+---
+
