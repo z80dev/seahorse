@@ -271,8 +271,8 @@
         "Typecheck passes"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/token_vault.py. Reference at tests/anchor-reference/token_vault_anchor/. 12 LiteSVM integration tests covering initialization, deposit (single/multiple), withdraw (partial/full), authorization (only owner can withdraw), and error cases (zero amount, insufficient funds). SPL Token helpers added to tests/integration/helpers.rs for creating mint/token accounts in LiteSVM."
     },
     {
       "id": "US-016",

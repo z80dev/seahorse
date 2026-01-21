@@ -336,3 +336,38 @@
   - Integer division uses `//` operator in Python (not `/`)
 ---
 
+
+## 2026-01-21 - US-015
+- Implemented Token Vault (deposit/withdraw) with full test suite
+- Files changed:
+  - examples/token_vault.py (new Seahorse token vault)
+  - tests/anchor-reference/token_vault_anchor/ (Anchor reference program)
+  - tests/integration/token_vault_integration.rs (12 LiteSVM integration tests)
+  - tests/compiled-examples/token_vault.rs (compiled Seahorse output)
+  - tests/integration/Cargo.toml (added SPL Token dependencies)
+  - tests/integration/helpers.rs (added SPL Token helpers)
+- Token vault features:
+  - initialize_vault: Creates vault state PDA and PDA-owned token account
+  - deposit: Transfers tokens from user to vault using CPI to Token Program
+  - withdraw: Transfers tokens from vault to owner using PDA signer seeds
+  - Authorization: Only vault owner can withdraw
+  - Total deposits tracked in vault state account
+- SPL Token helpers added:
+  - create_mint_account(): Create mint account data for LiteSVM
+  - create_token_account(): Create token account data for LiteSVM
+  - get_ata(): Get associated token address
+  - read_token_balance() / read_mint_supply(): Parse account data
+- Test coverage (12 tests):
+  - Initialization: Single vault, different users with separate vaults
+  - Deposit: Single deposit, multiple deposits, zero amount fails
+  - Withdraw: Partial, full, zero fails, insufficient funds fails
+  - Authorization: Unauthorized withdrawal fails
+  - Full workflow: Deposit → withdraw → deposit → verify balances
+- **Learnings for future iterations:**
+  - Seahorse TokenAccount.transfer(authority, to, amount, signer) uses signer seeds for PDA-signed transfers
+  - Compiled Seahorse code marks mint as `#[account(mut)]` - tests must pass mint as writable_meta
+  - LiteSVM requires pre-created token accounts via set_account() with properly packed SPL Token state
+  - spl_token::state::Account/Mint use solana_program_pack::COption (not Option) for optional pubkeys
+  - Program IDs must be valid Base58 that decodes to 32 bytes - generate with `solana-keygen new`
+  - Vault bump stored during init via `vault.bump = vault.bump()` pattern before calling init()
+---
