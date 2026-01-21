@@ -22,6 +22,8 @@
 - **TypeScript tests**: Located in tests/ts/, run with `npm test` from that directory. Uses litesvm 0.4.0 npm package with vitest.
 - **Build pipeline**: `scripts/build-test-programs.sh` compiles Seahorse examples → builds .so files → outputs to target/deploy/
 - **Seahorse compiled output format**: Multi-file with markers `// ===== dot/mod.rs =====`, `// ===== dot/program.rs =====`, `// ===== lib.rs =====`
+- **Mutable wrapper in Seahorse**: Compiled code wraps accounts in `Mutable<T>` requiring `.borrow()` for field access in PDA signer seeds
+- **Program IDs**: Ensure base58 program IDs decode to exactly 32 bytes (valid base58 address length)
 
 ---
 
@@ -499,4 +501,32 @@
   - Use simpler seeds (escrow_id only) instead of complex seeds (maker + escrow_id) for multi-party flows
   - Store bump in escrow account and read via escrow.bump for signer seeds
   - Both init and transfer operations can use escrow PDA as authority via signer=['escrow', escrow_id, bump]
+---
+
+## 2026-01-21 - US-020
+- Implemented comprehensive tests for escrow program
+- Files changed:
+  - tests/integration/escrow_integration.rs (new - 11 integration tests)
+  - tests/integration/Cargo.toml (added escrow_integration test target)
+  - tests/common/escrow_parity.rs (new - 4 behavior tests)
+  - tests/common/Cargo.toml (added escrow_parity test target)
+  - examples/escrow.py (fixed invalid program ID)
+  - tests/compiled-examples/escrow.rs (fixed PDA signer seed bug)
+  - tests/anchor-reference/escrow_anchor/Cargo.toml (added init-if-needed feature)
+- Bug fixes during implementation:
+  - Fixed invalid program ID in escrow.py (43-char base58 decoded to 33 bytes, not 32)
+  - Fixed PDA signer seeds bug: escrow.escrow_id -> escrow.borrow().escrow_id in signer seeds
+  - Added init-if-needed feature to Anchor reference for init_if_needed macro support
+- Test coverage:
+  - make_escrow: single, multiple escrows, zero amount errors
+  - take_escrow: happy path, wrong maker fails, insufficient funds fails
+  - cancel_escrow: happy path, unauthorized fails
+  - Full workflows: make→take, make→cancel
+  - Seahorse behavior verification (state init, workflow, cancel, deterministic PDA)
+- **Learnings for future iterations:**
+  - Seahorse compiled output uses Mutable<T> wrapper that requires .borrow() for field access
+  - When using fields in signer seeds, always use escrow.borrow().field not escrow.field
+  - Anchor reference programs using InterfaceAccount<TokenAccount> and ATA constraints have different account order than Seahorse
+  - For parity tests between programs with different interfaces, focus on verifying similar behavior rather than byte-for-byte comparison
+  - Anchor escrow uses InterfaceAccount + associated_token::authority while Seahorse uses Box<Account<TokenAccount>> + basic token accounts
 ---

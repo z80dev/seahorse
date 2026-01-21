@@ -66,3 +66,7 @@ path = "init_patterns_parity.rs"
 [[test]]
 name = "ata_patterns_parity"
 path = "ata_patterns_parity.rs"
+
+[[test]]
+name = "escrow_parity"
+path = "escrow_parity.rs"

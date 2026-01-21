@@ -8,7 +8,7 @@ use anchor_spl::{
 };
 
 // Use the same program ID as the Seahorse version for parity tests
-declare_id!("EScroW111111111111111111111111111111111111111");
+declare_id!("7bNQSAJXfZjwTP86A3Z53WP8VSEHT4qFY4LMcepq6MPm");
 
 #[program]
 pub mod escrow_anchor {

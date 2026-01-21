@@ -9,7 +9,7 @@
 
 from seahorse.prelude import *
 
-declare_id('EScroW111111111111111111111111111111111111111')
+declare_id('7bNQSAJXfZjwTP86A3Z53WP8VSEHT4qFY4LMcepq6MPm')
 
 
 class Escrow(Account):

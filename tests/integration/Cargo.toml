@@ -79,3 +79,7 @@ path = "ata_patterns_integration.rs"
 [[test]]
 name = "token_2022_integration"
 path = "token_2022_integration.rs"
+
+[[test]]
+name = "escrow_integration"
+path = "escrow_integration.rs"
