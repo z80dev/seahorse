@@ -499,8 +499,8 @@
         "Typecheck passes"
       ],
       "priority": 29,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse (examples/nft_collection.py) tracks collection configuration and verified membership since it lacks native Metaplex support. Anchor reference (tests/anchor-reference/nft_collection_anchor/) implements full Metaplex CPI for actual collection verification. 17 integration tests cover collection CRUD, NFT membership, verification flows, and authorization."
     },
     {
       "id": "US-029",

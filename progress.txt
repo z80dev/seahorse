@@ -773,3 +773,35 @@
   - For features Seahorse doesn't support natively (Metaplex, Token-2022), use config tracking pattern
   - NftConfig uses nft_id: u64 instead of mint key because Seahorse can't use UncheckedAccount in PDA seeds
 ---
+
+## 2026-01-21 - US-028
+- Implemented NFT collection with verified membership tracking program
+- Files changed:
+  - examples/nft_collection.py (new Seahorse collection tracking program)
+  - tests/anchor-reference/nft_collection_anchor/src/lib.rs (new Anchor reference with Metaplex CPI)
+  - tests/anchor-reference/nft_collection_anchor/Cargo.toml (new)
+  - tests/integration/nft_collection_integration.rs (new - 17 integration tests)
+  - tests/integration/Cargo.toml (added nft_collection_integration test target)
+- Collection features:
+  - Collection account: authority, collection_id (u64 for PDA), collection_mint, name/symbol/uri, total_nfts, verified_nfts, is_finalized, bump
+  - CollectionMember account: collection, nft_mint, is_verified, bump
+  - create_collection: Creates collection config PDA with validated metadata
+  - update_collection: Updates metadata before finalization
+  - finalize_collection: Locks collection metadata (prevents further updates)
+  - add_nft_to_collection: Registers NFT as member (increments total_nfts)
+  - verify_nft: Marks member as verified (increments verified_nfts)
+  - unverify_nft: Removes verification status (decrements verified_nfts)
+  - get_collection_info/get_member_info: Read-only logging
+- Key design decisions:
+  - Like US-027, Seahorse tracks collection state since no native Metaplex support
+  - Member PDA seeds: ['member', collection.key(), nft_mint.key()]
+  - Anchor reference includes full Metaplex CPI (create_collection_nft, mint_to_collection, verify/unverify_collection_metaplex)
+  - UnverifyCollection struct uses `collection` and `collection_master_edition_account` field names (not `collection_metadata` and `collection_master_edition`)
+- Test coverage:
+  - Integration (17 tests): create collection (basic, different IDs, name/symbol too long), update collection (basic, unauthorized, after finalization), finalize collection, add NFT (basic, multiple), verify NFT (basic, unauthorized, twice fails), unverify NFT (basic, unverified fails), full workflow, PDA determinism
+- **Learnings for future iterations:**
+  - Base58 program IDs must decode to exactly 32 bytes - lowercase 'l' and digit '0' are invalid
+  - anchor_spl::metadata struct field names vary: SetAndVerifyCollection uses collection_metadata, UnverifyCollection uses collection
+  - Collection finalization locks metadata but still allows adding/verifying NFTs
+  - total_nfts and verified_nfts counters enable on-chain collection statistics
+---
