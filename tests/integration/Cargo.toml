@@ -87,3 +87,7 @@ path = "escrow_integration.rs"
 [[test]]
 name = "token_swap_integration"
 path = "token_swap_integration.rs"
+
+[[test]]
+name = "staking_integration"
+path = "staking_integration.rs"

@@ -407,8 +407,8 @@
         "Typecheck passes"
       ],
       "priority": 24,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "7 LiteSVM integration tests (tests/integration/staking_integration.rs): initialize_pool, stake, unstake_with_rewards (uses warp_to_slot), claim_rewards_without_unstaking, error cases (zero amount, unstake more than staked, claim with no stake). 5 parity tests (tests/common/staking_parity.rs): pool initialization state, stake updates pool totals, reward calculation formula (staked_amount * reward_rate * slots_elapsed / REWARD_SCALE), claim_rewards preserves stake, deterministic PDA derivation. Reward formula verified with time warping."
     },
     {
       "id": "US-024",

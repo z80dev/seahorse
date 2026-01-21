@@ -586,3 +586,41 @@
   - Always verify k = pool_a * pool_b never decreases (fees increase k)
   - Use Pubkey::new_unique() instead of invalid base58 strings for test pubkeys
 ---
+
+## 2026-01-21 - US-023
+- Implemented token staking program with time-based reward calculation
+- Files changed:
+  - examples/staking.py (new Seahorse staking program)
+  - tests/anchor-reference/staking_anchor/src/lib.rs (new Anchor reference)
+  - tests/anchor-reference/staking_anchor/Cargo.toml (new)
+  - tests/compiled-examples/staking.rs (compiled Seahorse output)
+  - tests/integration/staking_integration.rs (new - 7 integration tests)
+  - tests/integration/Cargo.toml (added staking_integration test target)
+  - tests/common/staking_parity.rs (new - 5 parity tests)
+  - tests/common/Cargo.toml (added staking_parity test target)
+- Staking features:
+  - Pool account: authority, stake_mint, reward_mint, stake_vault, reward_rate, total_staked, last_update_slot, bump
+  - UserStake account: owner, pool, staked_amount, pending_rewards, last_stake_slot, bump
+  - initialize_pool: Creates pool PDA and stake vault PDA (pool is vault authority)
+  - create_user_stake: Creates user-specific stake tracking account
+  - stake: Transfers tokens to vault, accumulates pending rewards on existing stake
+  - unstake: Returns tokens, mints accumulated rewards
+  - claim_rewards: Mints rewards without unstaking (stake preserved)
+- Reward formula: rewards = staked_amount * reward_rate * slots_elapsed / REWARD_SCALE
+  - REWARD_SCALE = 1,000,000 (for precision without floating point)
+  - Example: 1000 staked * 100,000 rate * 100 slots / 1,000,000 = 10,000 rewards
+- Key design decisions:
+  - Pool PDA seeds: ['pool', stake_mint] (not authority + stake_mint for simpler PDA signing)
+  - UserStake PDA seeds: ['user_stake', stake_mint, user] (not pool + user)
+  - Pool is reward mint authority (can mint rewards)
+  - Clock sysvar passed as parameter for slot-based timing
+- Test coverage:
+  - Integration: initialize_pool, stake, unstake_with_rewards (time warp), claim_rewards_without_unstaking, error cases
+  - Parity: pool initialization, stake/pool totals, reward formula verification, claim preserves stake, deterministic PDAs
+- **Learnings for future iterations:**
+  - Seahorse cannot use Pool account type as seed in PDA derivation (use stake_mint instead)
+  - Seahorse cannot use UncheckedAccount in PDA signer seeds (authority must be stored in account)
+  - LiteSVM warp_to_slot() advances time for slot-based reward calculations
+  - When Seahorse marks an account as `mut` (mutable), tests must use writable_meta() not readonly_meta()
+  - Account data offsets must match exactly: disc(8) + fields in order (verify with generated code)
+---
