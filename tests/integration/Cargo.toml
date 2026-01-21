@@ -135,3 +135,7 @@ path = "multisig_integration.rs"
 [[test]]
 name = "oracle_consumer_integration"
 path = "oracle_consumer_integration.rs"
+
+[[test]]
+name = "cpi_patterns_integration"
+path = "cpi_patterns_integration.rs"

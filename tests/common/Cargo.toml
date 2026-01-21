@@ -110,3 +110,7 @@ path = "multisig_parity.rs"
 [[test]]
 name = "oracle_consumer_parity"
 path = "oracle_consumer_parity.rs"
+
+[[test]]
+name = "cpi_patterns_parity"
+path = "cpi_patterns_parity.rs"
