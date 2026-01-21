@@ -13,14 +13,20 @@ use mollusk_svm::{result::Check, Mollusk};
 use seahorse_unit_tests::helpers::*;
 use seahorse_unit_tests::*;
 use solana_sdk::{
-    account::AccountSharedData,
+    account::Account,
     account::ReadableAccount,
     pubkey::Pubkey,
 };
 
-/// Create a system account as AccountSharedData
-fn system_account_shared(lamports: u64) -> AccountSharedData {
-    AccountSharedData::new(lamports, 0, &solana_sdk::system_program::id())
+/// Create a system account
+fn system_account(lamports: u64) -> Account {
+    Account {
+        lamports,
+        data: vec![],
+        owner: solana_sdk::system_program::id(),
+        executable: false,
+        rent_epoch: 0,
+    }
 }
 
 /// Example test using Mollusk with the System Program
@@ -40,9 +46,9 @@ fn test_mollusk_system_transfer() {
     let transfer_amount = 100_000_000; // 0.1 SOL
 
     // Create accounts with initial balances
-    let accounts: Vec<(Pubkey, AccountSharedData)> = vec![
-        (sender, system_account_shared(sender_starting_lamports)),
-        (recipient, system_account_shared(0)),
+    let accounts: Vec<(Pubkey, Account)> = vec![
+        (sender, system_account(sender_starting_lamports)),
+        (recipient, system_account(0)),
     ];
 
     // Create transfer instruction
@@ -95,9 +101,9 @@ fn test_mollusk_with_checks() {
     let starting_lamports = 500_000_000;
     let transfer_amount = 42_000;
 
-    let accounts: Vec<(Pubkey, AccountSharedData)> = vec![
-        (sender, system_account_shared(starting_lamports)),
-        (recipient, system_account_shared(starting_lamports)),
+    let accounts: Vec<(Pubkey, Account)> = vec![
+        (sender, system_account(starting_lamports)),
+        (recipient, system_account(starting_lamports)),
     ];
 
     let instruction = solana_sdk::system_instruction::transfer(
@@ -135,10 +141,10 @@ fn test_mollusk_instruction_chain() {
 
     let starting_lamports = 1_000_000_000;
 
-    let accounts: Vec<(Pubkey, AccountSharedData)> = vec![
-        (alice, system_account_shared(starting_lamports)),
-        (bob, system_account_shared(starting_lamports)),
-        (carol, system_account_shared(starting_lamports)),
+    let accounts: Vec<(Pubkey, Account)> = vec![
+        (alice, system_account(starting_lamports)),
+        (bob, system_account(starting_lamports)),
+        (carol, system_account(starting_lamports)),
     ];
 
     // Chain: Alice -> Bob -> Carol

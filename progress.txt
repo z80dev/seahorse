@@ -1,0 +1,55 @@
+## Codebase Patterns
+
+- Builtin types are defined in `src/core/compile/builtin/` with separate modules for prelude, python, etc.
+- Each builtin module has a `namespace()` function that returns a BTreeMap of names to NamespacedObjects
+- The `Builtin` enum in `mod.rs` wraps all builtin variants and `match_builtin!` macro dispatches to them
+- Type helpers like `Ty::prelude()` and `Ty::python()` are in `src/core/compile/check/mod.rs`
+- Module registration happens in `src/core/preprocess/mod.rs` with the `Module` enum
+- Generated code templates are in `src/core/generate/mod.rs` using `quote!` macro
+- Data files live in `data/const/` and are included via macros in `src/data.rs`
+- **E2E workflow**: `seahorse init` → write .py → `seahorse compile` → split output files → `anchor build`
+- **blake3 compatibility**: Pin blake3 to =1.8.2 in generated Cargo.toml (v1.8.3+ requires edition 2024 unsupported by Solana BPF toolchain)
+- **Reference programs**: Find idiomatic Anchor programs first, then write Seahorse equivalents to match
+- **Testing stack**: Mollusk for unit tests, LiteSVM for integration tests, TypeScript secondary
+
+- **Solana SDK versioning**: Use solana-sdk 2.2.x with mollusk-svm 0.1.x for Anchor 0.32 compatibility. SDK 3.0+ is only available in the modular crate ecosystem (solana-account, solana-pubkey, etc.) and requires Anchor 1.0+
+- **Mollusk versions**: 0.0.x uses solana-sdk 2.1, 0.1.x uses solana-sdk 2.2, 0.8+ uses modular crates v3.x
+- **Mollusk API (v0.1.x)**: Uses Account type (not AccountSharedData). Need ReadableAccount trait for .lamports()
+- **Anchor discriminators**: Use sha256("account:<AccountName>")[..8] for accounts, sha256("global:<instruction_name>")[..8] for instructions
+
+---
+
+# Progress Log
+
+## 2026-01-20 - US-005
+- Implemented Mollusk test harness in tests/unit/
+- Files changed: tests/unit/Cargo.toml, lib.rs, helpers.rs, tests.rs, .gitignore
+- **Learnings for future iterations:**
+  - mollusk-svm v0.0.12 is compatible with solana-sdk 2.1 (Anchor 0.32 compatible)
+  - v0.8+ and v0.10+ use Solana SDK v3/v4 modular crates - incompatible with current Anchor
+  - AccountSharedData requires importing ReadableAccount trait for .lamports() method
+  - Mollusk's Check API: Check::success(), Check::account(&key).lamports(amt).build()
+  - System program tests work out-of-box with Mollusk::default()
+---
+
+## 2026-01-21 - US-000
+- Upgraded Solana SDK and Mollusk to latest compatible versions
+- Files changed: tests/unit/Cargo.toml, tests/unit/tests.rs
+- Changes made:
+  - solana-sdk: 2.1.0 → 2.2.1
+  - solana-bpf-loader-program: 2.1.0 → 2.2.1
+  - solana-compute-budget: 2.1.0 → 2.2.1
+  - solana-program-runtime: 2.1.0 → 2.2.1
+  - solana-system-program: 2.1.0 → 2.2.1
+  - mollusk-svm: 0.0.12 → 0.1.3
+- API migration: AccountSharedData → Account in test code
+- **Learnings for future iterations:**
+  - Solana SDK 3.0 refers to the NEW modular crate ecosystem (solana-account v3, solana-pubkey v4, etc.)
+  - The monolithic solana-sdk crate jumps from 2.x to 3.0 with breaking changes (Address type replaces Pubkey)
+  - Anchor 0.32.x uses modular crates at v2.x - NOT compatible with SDK 3.0+
+  - Full SDK 3.0 support requires waiting for Anchor 1.0 release
+  - mollusk-svm 0.1.x is the latest version using monolithic solana-sdk 2.2
+  - mollusk-svm 0.8+ uses modular crates and is incompatible with current Anchor
+  - The practical "SDK upgrade" for Anchor 0.32 compatibility is solana-sdk 2.2.x
+---
+

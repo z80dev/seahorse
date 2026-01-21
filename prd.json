@@ -1,0 +1,783 @@
+{
+  "project": "Seahorse",
+  "branchName": "ralph/test-suite",
+  "description": "Upgrade to Solana SDK 3.0, then build comprehensive test suite with LiteSVM + Mollusk and 30+ example programs derived from idiomatic Anchor programs",
+  "userStories": [
+    {
+      "id": "US-000",
+      "title": "Upgrade solana-sdk to 3.0",
+      "description": "As a developer, I need to upgrade the core solana-sdk dependency to version 3.0 for compatibility with the latest Solana toolchain.",
+      "acceptanceCriteria": [
+        "Update solana-sdk version to 3.0.x in Cargo.toml",
+        "Update solana-program to compatible version",
+        "Fix any breaking API changes in Seahorse compiler code",
+        "cargo build succeeds with new SDK version",
+        "cargo test passes",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Upgraded to solana-sdk 2.2.1 and mollusk-svm 0.1.3 - the latest versions compatible with Anchor 0.32.x. True SDK 3.0 (modular crates) requires Anchor 1.0+ which is not yet stable."
+    },
+    {
+      "id": "US-001",
+      "title": "Update Anchor dependencies for SDK 3.0",
+      "description": "As a developer, I need to update anchor-lang and anchor-spl to versions compatible with Solana SDK 3.0.",
+      "acceptanceCriteria": [
+        "Update anchor-lang to latest version supporting SDK 3.0",
+        "Update anchor-spl to matching version",
+        "Update generated Cargo.toml template in src/bin/cli/init.rs",
+        "Fix any breaking changes in generated code patterns",
+        "Example programs compile with anchor build",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Anchor 0.30+ should support SDK 3.0"
+    },
+    {
+      "id": "US-002",
+      "title": "Update mollusk-svm for SDK 3.0",
+      "description": "As a developer, I need mollusk-svm compatible with Solana SDK 3.0 for unit testing.",
+      "acceptanceCriteria": [
+        "Find mollusk-svm version compatible with solana-sdk 3.0",
+        "Update mollusk-svm dependency in test workspace",
+        "Verify mollusk-svm API compatibility (may have breaking changes)",
+        "Update existing Mollusk test helpers if needed",
+        "cargo test for Mollusk tests passes",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "Check mollusk-svm releases for SDK 3.0 support"
+    },
+    {
+      "id": "US-003",
+      "title": "Update litesvm for SDK 3.0",
+      "description": "As a developer, I need litesvm compatible with Solana SDK 3.0 for integration testing.",
+      "acceptanceCriteria": [
+        "Find litesvm version compatible with solana-sdk 3.0",
+        "Update litesvm dependency in test workspace",
+        "Update anchor-litesvm to matching version",
+        "Verify litesvm API compatibility",
+        "Update existing LiteSVM test helpers if needed",
+        "cargo test for LiteSVM tests passes",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Check litesvm releases for SDK 3.0 support"
+    },
+    {
+      "id": "US-004",
+      "title": "Verify example programs compile with SDK 3.0",
+      "description": "As a developer, I need to verify all existing Seahorse examples compile with the upgraded dependencies.",
+      "acceptanceCriteria": [
+        "Compile examples/calculator.py through Seahorse",
+        "Compile examples/constants.py through Seahorse",
+        "Compile all other existing examples",
+        "Generated Rust code builds with anchor build",
+        "Fix any compilation errors from SDK 3.0 changes",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "End-to-end validation of SDK 3.0 upgrade"
+    },
+    {
+      "id": "US-005",
+      "title": "Set up Mollusk test harness",
+      "description": "As a developer, I need a Mollusk-based test harness for fast, isolated unit tests on individual instructions.",
+      "acceptanceCriteria": [
+        "Add mollusk-svm dependency to test workspace in Cargo.toml",
+        "Create tests/unit/ directory structure",
+        "Implement helper functions for common test setup in tests/unit/helpers.rs",
+        "Create example unit test demonstrating Mollusk usage",
+        "cargo test runs Mollusk tests successfully",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Uses mollusk-svm version compatible with SDK 3.0"
+    },
+    {
+      "id": "US-006",
+      "title": "Set up LiteSVM Rust test harness",
+      "description": "As a developer, I need a LiteSVM-based Rust test harness for integration tests that simulate realistic transaction flows.",
+      "acceptanceCriteria": [
+        "Add litesvm dependency to test workspace",
+        "Create tests/integration/ directory structure",
+        "Implement test utilities for account creation and PDA derivation",
+        "Create example integration test demonstrating LiteSVM usage",
+        "Tests can load compiled Seahorse programs (.so files)",
+        "cargo test runs LiteSVM tests successfully",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Set up TypeScript test harness",
+      "description": "As a developer, I need a TypeScript test harness using anchor-litesvm for tests that benefit from JS ergonomics.",
+      "acceptanceCriteria": [
+        "Create tests/ts/ directory with package.json",
+        "Add anchor-litesvm, @coral-xyz/anchor, and vitest dependencies",
+        "Implement TypeScript test utilities matching Rust helpers",
+        "Create example TypeScript integration test",
+        "npm test runs TS tests successfully",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Create test program compilation pipeline",
+      "description": "As a developer, I need an automated pipeline that compiles Seahorse examples and reference Anchor programs for testing.",
+      "acceptanceCriteria": [
+        "Create scripts/build-test-programs.sh to compile all programs",
+        "Script compiles Seahorse examples to Rust via seahorse compile",
+        "Script builds compiled programs to .so files via anchor build",
+        "Script builds reference Anchor programs to .so files",
+        "Built artifacts stored in target/deploy/",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement behavior comparison framework",
+      "description": "As a developer, I need a framework to compare state changes between Seahorse and Anchor program executions.",
+      "acceptanceCriteria": [
+        "Create tests/common/compare.rs with comparison helpers",
+        "Helper to execute same instruction on both Seahorse and Anchor versions",
+        "Account state diffing: compare account data after execution",
+        "Clear error messages when behavior diverges",
+        "Support for comparing multiple instructions in sequence",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Counter program",
+      "description": "As a user, I want a simple counter example demonstrating basic account creation and mutation.",
+      "acceptanceCriteria": [
+        "Find reference Anchor counter program from solana-developers/program-examples",
+        "Copy reference to tests/anchor-reference/counter/",
+        "Write Seahorse equivalent: examples/counter.py",
+        "Instructions: initialize, increment, decrement, set_value",
+        "Unit tests verify each instruction in isolation (Mollusk)",
+        "Integration test verifies full workflow (LiteSVM)",
+        "Behavior parity verified against Anchor reference",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Hello World with logging",
+      "description": "As a user, I want a minimal program demonstrating program logging and basic instruction handling.",
+      "acceptanceCriteria": [
+        "Find reference Anchor hello-world program",
+        "Copy reference to tests/anchor-reference/hello_world/",
+        "Write Seahorse equivalent: examples/hello_world.py",
+        "Instructions: say_hello with msg! logging",
+        "Test verifies program executes without error",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Calculator with enums - add tests",
+      "description": "As a user, I want tests for the existing calculator example demonstrating enum usage and owner validation.",
+      "acceptanceCriteria": [
+        "Find reference Anchor calculator program with enum operations",
+        "Copy reference to tests/anchor-reference/calculator/",
+        "Verify existing examples/calculator.py matches reference patterns",
+        "Test all operations: add, sub, mul, div",
+        "Test owner validation (unauthorized access fails)",
+        "Unit tests for each operation (Mollusk)",
+        "Integration test for full calculator workflow (LiteSVM)",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "PDA derivation patterns",
+      "description": "As a user, I want examples demonstrating various PDA derivation patterns.",
+      "acceptanceCriteria": [
+        "Find reference Anchor PDA examples",
+        "Copy reference to tests/anchor-reference/pda_patterns/",
+        "Write Seahorse equivalent: examples/pda_patterns.py",
+        "Patterns: single seed, multiple seeds, user-derived PDAs, bump handling",
+        "Tests verify correct PDA addresses are derived",
+        "Tests verify bump seeds are stored/used correctly",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Account initialization patterns",
+      "description": "As a user, I want examples of different account initialization approaches.",
+      "acceptanceCriteria": [
+        "Find reference Anchor init examples",
+        "Copy reference to tests/anchor-reference/init_patterns/",
+        "Write Seahorse equivalent: examples/init_patterns.py",
+        "Patterns: init, init_if_needed, space calculation",
+        "Tests verify space calculation matches",
+        "Tests verify rent exemption handling",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Token vault (deposit/withdraw)",
+      "description": "As a user, I want a token vault example demonstrating SPL Token integration.",
+      "acceptanceCriteria": [
+        "Find reference Anchor token vault program",
+        "Copy reference to tests/anchor-reference/token_vault/",
+        "Write Seahorse equivalent: examples/token_vault.py",
+        "Instructions: initialize_vault, deposit, withdraw",
+        "CPI to Token Program for transfers",
+        "PDA-owned token account",
+        "Tests verify token balances change correctly",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Token minting program",
+      "description": "As a user, I want an example demonstrating mint authority and token minting.",
+      "acceptanceCriteria": [
+        "Find reference Anchor token minting program",
+        "Copy reference to tests/anchor-reference/token_mint/",
+        "Write Seahorse equivalent: examples/token_mint.py",
+        "Instructions: create_mint, mint_tokens, burn_tokens",
+        "PDA as mint authority",
+        "Tests verify supply changes correctly",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Associated Token Account handling",
+      "description": "As a user, I want examples showing ATA creation and usage patterns.",
+      "acceptanceCriteria": [
+        "Find reference Anchor ATA examples",
+        "Copy reference to tests/anchor-reference/ata_patterns/",
+        "Write Seahorse equivalent: examples/ata_patterns.py",
+        "Patterns: create ATA, init_if_needed for ATA, transfer to ATA",
+        "CPI to Associated Token Program",
+        "Tests verify ATA addresses match expected derivation",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Token-2022 extensions",
+      "description": "As a user, I want examples using Token-2022 program features.",
+      "acceptanceCriteria": [
+        "Find reference Anchor Token-2022 examples",
+        "Copy reference to tests/anchor-reference/token_2022/",
+        "Write Seahorse equivalent: examples/token_2022.py",
+        "Features: transfer fees or interest-bearing or metadata pointer",
+        "CPI to Token-2022 Program",
+        "Tests verify extension data is set correctly",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-019",
+      "title": "Escrow program - Seahorse implementation",
+      "description": "As a user, I want a Seahorse escrow program for trustless token swaps.",
+      "acceptanceCriteria": [
+        "Find reference Anchor escrow from solana-developers/program-examples or anchor-escrow-2025",
+        "Copy reference to tests/anchor-reference/escrow/",
+        "Write Seahorse equivalent: examples/escrow.py",
+        "Instructions: initialize_escrow, accept_escrow, cancel_escrow",
+        "Handles two-party token exchange",
+        "Typecheck passes"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-020",
+      "title": "Escrow program - tests",
+      "description": "As a developer, I need comprehensive tests for the escrow program.",
+      "acceptanceCriteria": [
+        "Tests for full happy path (init -> accept)",
+        "Tests for cancellation flow",
+        "Tests for failure cases (wrong amounts, wrong parties)",
+        "Behavior parity verified against Anchor reference",
+        "Typecheck passes"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-021",
+      "title": "Token swap AMM - Seahorse implementation",
+      "description": "As a user, I want a basic AMM/swap example demonstrating liquidity pool mechanics.",
+      "acceptanceCriteria": [
+        "Find reference Anchor AMM/swap program",
+        "Copy reference to tests/anchor-reference/token_swap/",
+        "Write Seahorse equivalent: examples/token_swap.py",
+        "Instructions: initialize_pool, add_liquidity, remove_liquidity, swap",
+        "Constant product formula (x * y = k)",
+        "LP token minting/burning",
+        "Typecheck passes"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-022",
+      "title": "Token swap AMM - tests",
+      "description": "As a developer, I need comprehensive tests for the AMM program.",
+      "acceptanceCriteria": [
+        "Tests verify swap math is correct",
+        "Tests verify LP token accounting",
+        "Tests verify slippage handling",
+        "Behavior parity verified against Anchor reference",
+        "Typecheck passes"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-023",
+      "title": "Staking program",
+      "description": "As a user, I want a token staking example with rewards calculation.",
+      "acceptanceCriteria": [
+        "Find reference Anchor staking program",
+        "Copy reference to tests/anchor-reference/staking/",
+        "Write Seahorse equivalent: examples/staking.py",
+        "Instructions: initialize_pool, stake, unstake, claim_rewards",
+        "Time-based reward calculation",
+        "Tests use LiteSVM time warping for reward accumulation",
+        "Tests verify reward math",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-024",
+      "title": "Lending pool (deposit/borrow)",
+      "description": "As a user, I want a simplified lending example demonstrating collateralization.",
+      "acceptanceCriteria": [
+        "Find reference Anchor lending program (simplified)",
+        "Copy reference to tests/anchor-reference/lending/",
+        "Write Seahorse equivalent: examples/lending.py",
+        "Instructions: deposit_collateral, borrow, repay, withdraw_collateral",
+        "Collateral ratio enforcement",
+        "Interest accrual (simplified)",
+        "Tests verify collateral requirements",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 25,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-025",
+      "title": "Vesting schedule",
+      "description": "As a user, I want a token vesting example with cliff and linear release.",
+      "acceptanceCriteria": [
+        "Find reference Anchor vesting program",
+        "Copy reference to tests/anchor-reference/vesting/",
+        "Write Seahorse equivalent: examples/vesting.py",
+        "Instructions: create_vesting, claim_vested",
+        "Cliff period, linear vesting after cliff",
+        "Tests use LiteSVM time warping",
+        "Tests verify partial claims work correctly",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 26,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-026",
+      "title": "Auction program",
+      "description": "As a user, I want an auction example demonstrating time-based state transitions.",
+      "acceptanceCriteria": [
+        "Find reference Anchor auction program",
+        "Copy reference to tests/anchor-reference/auction/",
+        "Write Seahorse equivalent: examples/auction.py",
+        "Instructions: create_auction, place_bid, end_auction, claim_prize",
+        "Highest bidder tracking, bid refunds",
+        "Tests use LiteSVM time warping for auction end",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 27,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-027",
+      "title": "NFT minting with Metaplex",
+      "description": "As a user, I want an NFT minting example using Metaplex Token Metadata.",
+      "acceptanceCriteria": [
+        "Find reference Anchor NFT minting program with Metaplex",
+        "Copy reference to tests/anchor-reference/nft_mint/",
+        "Write Seahorse equivalent: examples/nft_mint.py",
+        "CPI to Metaplex Token Metadata program",
+        "Create metadata, mint NFT, set URI",
+        "Tests verify metadata account created correctly",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 28,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-028",
+      "title": "NFT collection with verification",
+      "description": "As a user, I want an NFT collection example with verified collection membership.",
+      "acceptanceCriteria": [
+        "Find reference Anchor NFT collection program",
+        "Copy reference to tests/anchor-reference/nft_collection/",
+        "Write Seahorse equivalent: examples/nft_collection.py",
+        "Create collection NFT, mint to collection, verify",
+        "Collection authority handling",
+        "Tests verify collection verification status",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 29,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-029",
+      "title": "NFT staking - Seahorse implementation",
+      "description": "As a user, I want an NFT staking example with reward tokens.",
+      "acceptanceCriteria": [
+        "Find reference Anchor NFT staking program",
+        "Copy reference to tests/anchor-reference/nft_staking/",
+        "Write Seahorse equivalent: examples/nft_staking.py",
+        "Instructions: stake_nft, unstake_nft, claim_rewards",
+        "NFT custody (transfer to PDA)",
+        "Time-based reward calculation",
+        "Typecheck passes"
+      ],
+      "priority": 30,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-030",
+      "title": "NFT staking - tests",
+      "description": "As a developer, I need comprehensive tests for the NFT staking program.",
+      "acceptanceCriteria": [
+        "Tests verify NFT ownership transfers correctly",
+        "Tests verify reward accumulation with time warping",
+        "Tests verify unstaking returns NFT",
+        "Behavior parity verified against Anchor reference",
+        "Typecheck passes"
+      ],
+      "priority": 31,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-031",
+      "title": "NFT marketplace - Seahorse implementation",
+      "description": "As a user, I want an NFT marketplace example for listing and purchasing.",
+      "acceptanceCriteria": [
+        "Find reference Anchor NFT marketplace program",
+        "Copy reference to tests/anchor-reference/nft_marketplace/",
+        "Write Seahorse equivalent: examples/nft_marketplace.py",
+        "Instructions: list_nft, buy_nft, delist_nft",
+        "Escrow NFT during listing",
+        "Price in SOL or SPL token",
+        "Typecheck passes"
+      ],
+      "priority": 32,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-032",
+      "title": "NFT marketplace - tests",
+      "description": "As a developer, I need comprehensive tests for the NFT marketplace program.",
+      "acceptanceCriteria": [
+        "Tests verify listing state",
+        "Tests verify purchase transfers NFT and payment",
+        "Tests verify delisting returns NFT",
+        "Behavior parity verified against Anchor reference",
+        "Typecheck passes"
+      ],
+      "priority": 33,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-033",
+      "title": "Simple voting",
+      "description": "As a user, I want a basic voting example demonstrating proposal and vote mechanics.",
+      "acceptanceCriteria": [
+        "Find reference Anchor voting program",
+        "Copy reference to tests/anchor-reference/voting/",
+        "Write Seahorse equivalent: examples/voting.py",
+        "Instructions: create_proposal, cast_vote, finalize_proposal",
+        "One vote per user (voter record PDA)",
+        "Vote counting",
+        "Tests verify vote tallying",
+        "Tests verify double-vote prevention",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 34,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-034",
+      "title": "Token-weighted governance",
+      "description": "As a user, I want a governance example where voting power is proportional to tokens held.",
+      "acceptanceCriteria": [
+        "Find reference Anchor governance program",
+        "Copy reference to tests/anchor-reference/governance/",
+        "Write Seahorse equivalent: examples/governance.py",
+        "Voting power based on token balance",
+        "Quorum requirements",
+        "Tests verify weighted vote calculation",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 35,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-035",
+      "title": "Multisig wallet",
+      "description": "As a user, I want a multisig example requiring M-of-N signatures.",
+      "acceptanceCriteria": [
+        "Find reference Anchor multisig program",
+        "Copy reference to tests/anchor-reference/multisig/",
+        "Write Seahorse equivalent: examples/multisig.py",
+        "Instructions: create_multisig, propose_transaction, approve, execute",
+        "Configurable threshold (M of N)",
+        "Tests verify threshold enforcement",
+        "Tests verify transaction execution after threshold met",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 36,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-036",
+      "title": "Oracle price feed consumer",
+      "description": "As a user, I want an example consuming oracle price feeds (Pyth/Switchboard pattern).",
+      "acceptanceCriteria": [
+        "Find reference Anchor oracle consumer program",
+        "Copy reference to tests/anchor-reference/oracle_consumer/",
+        "Write Seahorse equivalent: examples/oracle_consumer.py",
+        "Read price from oracle account structure",
+        "Staleness check",
+        "Tests mock oracle account data",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 37,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-037",
+      "title": "Cross-program invocation patterns",
+      "description": "As a user, I want examples demonstrating various CPI patterns.",
+      "acceptanceCriteria": [
+        "Find reference Anchor CPI examples",
+        "Copy reference to tests/anchor-reference/cpi_patterns/",
+        "Write Seahorse equivalent: examples/cpi_patterns.py",
+        "Patterns: basic CPI, CPI with signer seeds, CPI with remaining accounts",
+        "Tests verify CPI executes correctly",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 38,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-038",
+      "title": "Realloc and close patterns",
+      "description": "As a user, I want examples for dynamic account resizing and closing.",
+      "acceptanceCriteria": [
+        "Find reference Anchor realloc/close examples",
+        "Copy reference to tests/anchor-reference/realloc_close/",
+        "Write Seahorse equivalent: examples/realloc_close.py",
+        "Instructions: grow_account, shrink_account, close_account",
+        "Tests verify space changes correctly",
+        "Tests verify lamports returned on close",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 39,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-039",
+      "title": "Event emission patterns",
+      "description": "As a user, I want examples demonstrating Anchor event emission.",
+      "acceptanceCriteria": [
+        "Find reference Anchor event examples",
+        "Copy reference to tests/anchor-reference/events/",
+        "Verify existing examples/event.py or enhance it",
+        "Emit events with various data types",
+        "Tests capture and verify emitted events",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 40,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-040",
+      "title": "Error handling patterns",
+      "description": "As a user, I want examples demonstrating custom error definitions and handling.",
+      "acceptanceCriteria": [
+        "Find reference Anchor error handling examples",
+        "Copy reference to tests/anchor-reference/errors/",
+        "Write Seahorse equivalent: examples/errors.py",
+        "Custom error enum with codes",
+        "require! macro usage patterns",
+        "Tests verify correct error codes returned",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 41,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-041",
+      "title": "Access control patterns",
+      "description": "As a user, I want examples of various access control mechanisms.",
+      "acceptanceCriteria": [
+        "Find reference Anchor access control examples",
+        "Copy reference to tests/anchor-reference/access_control/",
+        "Write Seahorse equivalent: examples/access_control.py",
+        "Patterns: owner-only, admin roles, whitelist",
+        "Tests verify unauthorized access is rejected",
+        "Tests verify authorized access succeeds",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 42,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-042",
+      "title": "Batch operations",
+      "description": "As a user, I want examples processing multiple items in a single instruction.",
+      "acceptanceCriteria": [
+        "Find reference Anchor batch processing examples",
+        "Copy reference to tests/anchor-reference/batch_ops/",
+        "Write Seahorse equivalent: examples/batch_ops.py",
+        "Process vector of inputs",
+        "Remaining accounts pattern for variable accounts",
+        "Tests verify batch processing works correctly",
+        "Behavior parity verified",
+        "Typecheck passes"
+      ],
+      "priority": 43,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-043",
+      "title": "CI pipeline for test suite",
+      "description": "As a maintainer, I need a CI pipeline that runs all tests automatically.",
+      "acceptanceCriteria": [
+        "Create .github/workflows/test-suite.yml",
+        "Workflow builds all test programs",
+        "Workflow runs Rust tests (Mollusk + LiteSVM)",
+        "Workflow runs TypeScript tests",
+        "Test result reporting",
+        "Typecheck passes"
+      ],
+      "priority": 44,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-044",
+      "title": "CU tracking for informational analysis",
+      "description": "As a maintainer, I want to track compute unit usage across examples for analysis and comparison.",
+      "acceptanceCriteria": [
+        "Add Mollusk bencher setup for CU tracking",
+        "Record CU usage for all Seahorse examples",
+        "Record CU usage for reference Anchor programs",
+        "Generate comparison report (Seahorse vs Anchor CU)",
+        "Historical tracking of CU trends (informational only, no pass/fail)",
+        "Typecheck passes"
+      ],
+      "priority": 45,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
