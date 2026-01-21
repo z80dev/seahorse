@@ -1015,3 +1015,44 @@
   - Fixed-size owner storage is a Seahorse limitation workaround - no Vec/dynamic arrays in account fields
 ---
 
+
+## 2026-01-21 - US-036
+- Implemented oracle price feed consumer with Pyth-style patterns
+- Files changed:
+  - examples/oracle_consumer.py (new) - Seahorse oracle consumer implementation
+  - tests/compiled-examples/oracle_consumer.rs (new) - Compiled Rust output
+  - tests/anchor-reference/oracle_consumer_anchor/src/lib.rs (new) - Anchor reference with Pyth SDK
+  - tests/anchor-reference/oracle_consumer_anchor/Cargo.toml (new)
+  - tests/integration/oracle_consumer_integration.rs (new) - 9 integration tests
+  - tests/integration/Cargo.toml (modified) - Added oracle_consumer_integration test
+  - tests/common/oracle_consumer_parity.rs (new) - 5 parity tests
+  - tests/common/Cargo.toml (modified) - Added oracle_consumer_parity test
+- Oracle consumer features:
+  - PriceConfig account: authority, config_id, feed_name, oracle_address, max_staleness_slots, last_price, last_confidence, last_exponent, last_record_slot, update_count, bump
+  - PriceThreshold account: config, threshold_id, trigger_above, target_price_scaled, is_triggered, triggered_at_slot, bump
+  - create_price_config: Creates price config PDA with oracle address and staleness settings
+  - update_price_config: Updates oracle address and staleness settings (authority only)
+  - record_price: Records price from oracle with staleness validation
+  - create_price_threshold: Creates threshold monitoring for price above/below target
+  - check_threshold: Checks if price crossed threshold and marks triggered
+  - reset_threshold: Resets triggered threshold (authority only)
+  - get_price_info: Displays price info and staleness status
+- Key design decisions:
+  - Mocked oracle data via instruction parameters (Seahorse can't deserialize arbitrary account layouts)
+  - Staleness validation using slot numbers (current_slot - oracle_publish_slot <= max_staleness_slots)
+  - Anchor reference includes real Pyth SDK integration (pyth_sdk_solana) as comparison
+  - Price threshold uses raw price comparison (trigger_above: price >= target, trigger_below: price <= target)
+  - Threshold can only trigger once until reset
+- Bug fix during implementation:
+  - create_price_threshold needed config_id as explicit instruction parameter for PDA seeds
+  - Seahorse compiler generates Anchor constraints that reference instruction parameters, not account fields
+- Test coverage:
+  - Integration (9 tests): create_price_config, feed_name_too_long, update_price_config, record_price, record_price_stale_fails, create_price_threshold, check_threshold_trigger_above, reset_threshold, full_oracle_consumer_workflow
+  - Parity (5 tests): price_config_initialization, staleness_validation, update_counting, threshold_triggering, deterministic_pda_derivation
+- **Learnings for future iterations:**
+  - Seahorse PDA seeds in `init()` must use instruction parameters, not account field values
+  - For oracle patterns, mock data via parameters is necessary since Seahorse can't deserialize external account formats
+  - Pyth SDK integration (pyth_sdk_solana) works well in Anchor reference for comparison
+  - Staleness checks should use saturating_sub to handle edge cases
+  - Threshold triggering is idempotent (already triggered returns early)
+---
