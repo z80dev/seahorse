@@ -257,3 +257,27 @@
   - LiteSVM's TransactionResult.logs field contains program logs for verification
 ---
 
+## 2026-01-21 - US-012
+- Implemented Calculator program tests with full test suite
+- Files changed:
+  - tests/anchor-reference/calculator_anchor/ (Anchor reference program with matching program ID)
+  - tests/unit/calculator_tests.rs (14 Mollusk unit tests)
+  - tests/integration/calculator_integration.rs (12 LiteSVM integration tests)
+  - tests/common/calculator_parity.rs (3 behavior parity tests)
+  - tests/unit/Cargo.toml, tests/integration/Cargo.toml, tests/common/Cargo.toml (added test targets)
+- Calculator features:
+  - init_calculator: Creates PDA calculator account with owner
+  - do_operation: Executes ADD, SUB, MUL, DIV operations using enum
+  - reset_calculator: Resets display to 0
+- Test coverage:
+  - Mollusk: Each operation in isolation, edge cases (multiply by zero, truncation), authorization failures, division by zero
+  - LiteSVM: Full workflows, negative values, chained operations, authorization tests
+  - Parity: Seahorse vs Anchor produce identical display values, same error behavior for div-by-zero and unauthorized access
+- **Learnings for future iterations:**
+  - Anchor reference programs must use same declare_id! as Seahorse version for parity tests
+  - Operation enum serialization: single byte (0=ADD, 1=SUB, 2=MUL, 3=DIV) followed by i64 operand
+  - Calculator account layout: discriminator(8) + owner(32) + display(8) = 48 bytes total
+  - Seahorse div-by-zero panics with "attempt to divide by zero", can verify with result.is_err()
+  - Mollusk tests work for operations on pre-initialized accounts but not for init (needs system program CPI)
+---
+
