@@ -1,1 +1,5 @@
 /target
+/.build-programs
+tests/unit/target
+tests/integration/target
+tests/ts/node_modules
