@@ -42,3 +42,7 @@ path = "tests.rs"
 [[test]]
 name = "counter_integration"
 path = "counter_integration.rs"
+
+[[test]]
+name = "hello_world_integration"
+path = "hello_world_integration.rs"
