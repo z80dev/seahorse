@@ -690,8 +690,8 @@
         "Typecheck passes"
       ],
       "priority": 40,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Seahorse at examples/events.py. Reference at tests/anchor-reference/events_anchor/. Created comprehensive event patterns: SimpleEvent (u64, String), UserActionEvent (Pubkey, u8, i64), NumericEvent (u8, u32, u64, i64), TransferEvent (two Pubkeys, u64, String), StateChangeEvent (Pubkey, two u64s, String). EventCounter PDA tracks event_count and last_event_type. Instructions: initialize, emit_simple, emit_user_action, emit_numeric, emit_transfer, emit_state_change, emit_multiple (batch up to 10 events), get_counter_info. 15 LiteSVM integration tests, 12 parity tests covering account/instruction/event discriminators, PDA derivation, and state structure. Note: Original event.py preserved as minimal example."
     },
     {
       "id": "US-040",

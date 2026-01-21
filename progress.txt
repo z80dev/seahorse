@@ -1114,3 +1114,125 @@
   - This pattern allows `cargo test` to pass even when programs aren't built
   - Pre-existing ata_patterns_parity tests have separate issues (rent sysvar mismatch) - not related to CPI patterns
 ---
+
+## 2026-01-21 - US-038
+- Implemented realloc and close patterns for account lifecycle management
+- Files changed:
+  - examples/realloc_close.py (new) - Seahorse tracking pattern implementation
+  - tests/compiled-examples/realloc_close.rs (new) - Compiled Rust output (1047 lines)
+  - tests/anchor-reference/realloc_close_anchor/src/lib.rs (new) - Anchor reference with actual realloc/close
+  - tests/anchor-reference/realloc_close_anchor/Cargo.toml (new)
+  - tests/integration/realloc_close_integration.rs (new) - 14 integration tests
+  - tests/integration/Cargo.toml (modified) - Added realloc_close_integration test
+  - tests/common/realloc_close_parity.rs (new) - 6 parity tests
+  - tests/common/Cargo.toml (modified) - Added realloc_close_parity test
+  - prd.json (updated US-038 status to passes: true)
+- Key finding: Seahorse doesn't support native realloc/close operations
+  - No `realloc` constraint equivalent in Seahorse
+  - No `close` constraint equivalent in Seahorse
+  - Implemented tracking pattern instead (similar to Token-2022 and NFT mint approaches)
+- Seahorse realloc_close.py features:
+  - DynamicData account: owner, data_id, content (with padding), content_len, allocated_size, version, is_closed, bump
+  - ResizeRecord account: owner, record_id, current_size, max_size_reached, resize_count, is_active, bump
+  - initialize_data: Creates data account with initial content and simulated allocation size
+  - grow_account: Simulates growing by tracking new allocated_size and incrementing version
+  - shrink_account: Simulates shrinking by validating new_size < current and content fits
+  - close_data_account: Marks as closed via is_closed flag (sets allocated_size=0)
+  - create_record: Creates resize tracking record for analytics
+  - record_resize: Records resize events, tracks max_size_reached and resize_count
+  - close_record: Marks record as inactive
+  - get_data_info / get_record_info: Read-only logging
+- Anchor reference realloc_close_anchor features:
+  - DynamicData: Actual variable-length content string with computed space
+  - Uses Anchor's realloc constraints: realloc::payer, realloc::zero
+  - Uses Anchor's close constraint for actual account closing with lamport return
+  - grow_account: realloc = DynamicData::space(new_content.len()) + additional_space
+  - shrink_account: realloc = DynamicData::space(new_content.len()), realloc::zero = false
+  - close_data_account: close = owner (returns lamports to owner)
+  - ResizeRecord: Fixed-size tracking for parity comparison
+- Test coverage:
+  - Integration (14 tests): All gracefully skip when program not built
+    - initialize_data (single, multiple accounts)
+    - grow_account (success, unauthorized)
+    - shrink_account (success, content too large fails)
+    - close_data_account (success, unauthorized)
+    - create_record, record_resize (grow/multiple), close_record
+    - full_realloc_close_workflow
+    - pda_derivation_deterministic
+  - Parity (6 tests): All pass without program build
+    - DynamicData discriminator, ResizeRecord discriminator
+    - Instruction discriminators for all 9 instructions
+    - PDA derivation determinism
+    - Realloc tracking state transitions
+    - Resize record tracking state
+- **Learnings for future iterations:**
+  - Seahorse has no native realloc support - cannot dynamically resize accounts after creation
+  - Seahorse has no native close support - cannot close accounts and return rent lamports
+  - For features Seahorse doesn't support, use tracking/configuration pattern (like Token-2022, NFT mint)
+  - Track "simulated" state (allocated_size, is_closed) while Anchor does real operations
+  - Program IDs must decode to exactly 32 bytes - use `solana-keygen new --no-bip39-passphrase --no-outfile` to generate
+  - Seahorse class definitions cannot have docstrings - use # comments above the class
+  - Integration tests use single Instruction argument (not slice) in execute_tx()
+  - Test helpers: anchor_instruction(program_id, name, &data, accounts) - note data is reference
+---
+
+## 2026-01-21 - US-039
+- Implemented comprehensive event emission patterns in Seahorse
+- Files changed:
+  - examples/events.py (new) - Comprehensive event patterns example
+  - tests/compiled-examples/events.rs (new) - Compiled Rust output
+  - tests/anchor-reference/events_anchor/src/lib.rs (new) - Anchor reference implementation
+  - tests/anchor-reference/events_anchor/Cargo.toml (new)
+  - tests/integration/events_integration.rs (new) - 15 integration tests
+  - tests/integration/Cargo.toml (modified) - Added events_integration test
+  - tests/common/events_parity.rs (new) - 12 parity tests
+  - tests/common/Cargo.toml (modified) - Added events_parity test
+  - prd.json (updated US-039 status to passes: true)
+- Seahorse already has basic event support (examples/event.py) with:
+  - Event base class in prelude with .emit() method
+  - @dataclass decorator for event definitions
+  - Compiles to Anchor's #[event] macro
+- Created comprehensive events.py demonstrating:
+  - SimpleEvent: u64 value + String label
+  - UserActionEvent: Pubkey user + u8 action_type + i64 timestamp
+  - NumericEvent: u8/u32/u64 unsigned + i64 signed (demonstrates various integer types)
+  - TransferEvent: two Pubkeys (from_addr, to_addr) + u64 amount + String memo
+  - StateChangeEvent: Pubkey account + two u64 (old_value, new_value) + String change_type
+  - EventCounter PDA: tracks event_count and last_event_type for analytics
+- Instructions implemented:
+  - initialize: Creates EventCounter PDA with seeds=['counter', authority]
+  - emit_simple: Emits SimpleEvent, increments counter, sets last_event_type=1
+  - emit_user_action: Emits UserActionEvent with signer as user, last_event_type=2
+  - emit_numeric: Emits NumericEvent with all numeric types, last_event_type=3
+  - emit_transfer: Emits TransferEvent with from=signer, last_event_type=4
+  - emit_state_change: Emits StateChangeEvent, last_event_type=5
+  - emit_multiple: Batch emits up to 10 SimpleEvents in one tx, last_event_type=6
+  - get_counter_info: Logs counter state (read-only)
+- Anchor reference events_anchor implements same pattern with native #[event] macro
+- Test coverage:
+  - Integration (15 tests): All pass
+    - initialize (basic, multiple users)
+    - emit_simple (single, multiple times)
+    - emit_user_action, emit_numeric, emit_transfer, emit_state_change
+    - emit_multiple (5 events, max 10, exceeds limit fails)
+    - authorization (unauthorized emit fails)
+    - get_counter_info, full_workflow, pda_derivation_deterministic
+  - Parity (12 tests): All pass
+    - EventCounter account discriminator
+    - Instruction discriminators (8 instructions)
+    - Event discriminators (5 event types)
+    - Event discriminator calculation formula
+    - PDA derivation deterministic (same input = same output)
+    - PDA seeds structure verification
+    - EventCounter state layout (50 bytes: 8+32+8+1+1)
+    - Event data structure documentation (SimpleEvent, UserActionEvent, NumericEvent, TransferEvent, StateChangeEvent)
+- **Learnings for future iterations:**
+  - Seahorse events use @dataclass decorator + Event base class
+  - Events compile to #[event] Rust struct + emit!() macro
+  - Event discriminators use "event:<EventName>" prefix (sha256[0..8])
+  - Different from account discriminators which use "account:<Name>"
+  - Different from instruction discriminators which use "global:<name>"
+  - Events can contain any serializable types: primitives, Pubkey, String
+  - Original event.py preserved as minimal example, events.py is comprehensive
+  - Program ID must be valid base58 decoding to 32 bytes
+---

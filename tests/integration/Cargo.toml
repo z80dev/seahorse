@@ -143,3 +143,7 @@ path = "cpi_patterns_integration.rs"
 [[test]]
 name = "realloc_close_integration"
 path = "realloc_close_integration.rs"
+
+[[test]]
+name = "events_integration"
+path = "events_integration.rs"

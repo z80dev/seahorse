@@ -118,3 +118,7 @@ path = "cpi_patterns_parity.rs"
 [[test]]
 name = "realloc_close_parity"
 path = "realloc_close_parity.rs"
+
+[[test]]
+name = "events_parity"
+path = "events_parity.rs"
