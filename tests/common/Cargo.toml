@@ -82,3 +82,7 @@ path = "staking_parity.rs"
 [[test]]
 name = "lending_parity"
 path = "lending_parity.rs"
+
+[[test]]
+name = "vesting_parity"
+path = "vesting_parity.rs"
