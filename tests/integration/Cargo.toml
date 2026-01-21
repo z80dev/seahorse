@@ -147,3 +147,7 @@ path = "realloc_close_integration.rs"
 [[test]]
 name = "events_integration"
 path = "events_integration.rs"
+
+[[test]]
+name = "errors_integration"
+path = "errors_integration.rs"

@@ -122,3 +122,7 @@ path = "realloc_close_parity.rs"
 [[test]]
 name = "events_parity"
 path = "events_parity.rs"
+
+[[test]]
+name = "errors_parity"
+path = "errors_parity.rs"
