@@ -206,16 +206,13 @@ pub fn init(args: InitArgs) -> Result<(), Box<dyn Error>> {
             cargo["dependencies"]["anchor-lang"] = anchor_version.clone();
             cargo["dependencies"]["anchor-spl"] = anchor_version;
 
-            // TODO: Remove once https://github.com/solana-labs/solana/issues/33504 is resolved.
-            // See https://github.com/coral-xyz/anchor/pull/2756/files
-            // Can also remove here when Anchor release that fix
-            cargo["dependencies"]["ahash"] =
-                Item::Value(Value::String(Formatted::new("=0.8.9".to_string())));
+            // Note: The ahash pin (=0.8.9) is no longer needed as of Solana platform-tools v1.51+
+            // which uses Rust 1.84+ (the fix was needed for Rust < 1.71)
 
             let mut pyth = InlineTable::new();
             pyth.insert(
                 "version",
-                Value::String(Formatted::new("0.10.2".to_string())),
+                Value::String(Formatted::new("0.10.6".to_string())),
             );
             pyth.insert("optional", Value::Boolean(Formatted::new(true)));
             cargo["dependencies"]["pyth-sdk-solana"] = Item::Value(Value::InlineTable(pyth));
