@@ -16,7 +16,6 @@ use seahorse_integration_tests::*;
 use solana_pubkey::Pubkey;
 use solana_sdk_ids::system_program;
 use solana_signer::Signer;
-use std::path::Path;
 use std::str::FromStr;
 
 /// Errors program ID (from declare_id!)
@@ -27,21 +26,6 @@ fn program_id() -> Pubkey {
 /// Path to the compiled program
 const PROGRAM_PATH: &str = "../../target/deploy/errors.so";
 
-/// Check if the program is built
-fn program_exists() -> bool {
-    Path::new(PROGRAM_PATH).exists()
-}
-
-/// Macro to skip tests if program doesn't exist
-macro_rules! skip_if_not_built {
-    () => {
-        if !program_exists() {
-            eprintln!("SKIPPED: errors.so not found - run ./scripts/build-test-programs.sh first");
-            return;
-        }
-    };
-}
-
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
@@ -51,7 +35,7 @@ fn load_program() -> litesvm::LiteSVM {
     let prog_id = program_id();
 
     let program_bytes =
-        std::fs::read(PROGRAM_PATH).expect("Failed to read errors.so");
+        std::fs::read(PROGRAM_PATH).expect("Failed to read errors.so - run ./scripts/build-test-programs.sh first");
 
     let mut svm = litesvm::LiteSVM::new();
     svm.add_program(prog_id, &program_bytes);
@@ -167,7 +151,6 @@ fn read_authority(data: &[u8]) -> Pubkey {
 
 #[test]
 fn test_errors_initialize_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -205,7 +188,6 @@ fn test_errors_initialize_success() {
 
 #[test]
 fn test_errors_initialize_max_value_zero_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -233,7 +215,6 @@ fn test_errors_initialize_max_value_zero_fails() {
 
 #[test]
 fn test_errors_initialize_max_value_exceeds_limit_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -261,7 +242,6 @@ fn test_errors_initialize_max_value_exceeds_limit_fails() {
 
 #[test]
 fn test_errors_initialize_empty_name_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -286,7 +266,6 @@ fn test_errors_initialize_empty_name_fails() {
 
 #[test]
 fn test_errors_initialize_name_too_long_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -338,7 +317,6 @@ fn setup_error_demo(svm: &mut litesvm::LiteSVM) -> (solana_keypair::Keypair, Pub
 
 #[test]
 fn test_errors_set_value_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -363,7 +341,6 @@ fn test_errors_set_value_success() {
 
 #[test]
 fn test_errors_set_value_unauthorized_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (_, error_demo_pda) = setup_error_demo(&mut svm);
     let other_user = funded_keypair_10_sol(&mut svm);
@@ -385,7 +362,6 @@ fn test_errors_set_value_unauthorized_fails() {
 
 #[test]
 fn test_errors_set_value_exceeds_max_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -410,7 +386,6 @@ fn test_errors_set_value_exceeds_max_fails() {
 
 #[test]
 fn test_errors_increment_value_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -435,7 +410,6 @@ fn test_errors_increment_value_success() {
 
 #[test]
 fn test_errors_increment_value_zero_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -456,7 +430,6 @@ fn test_errors_increment_value_zero_fails() {
 
 #[test]
 fn test_errors_increment_value_exceeds_max_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -494,7 +467,6 @@ fn test_errors_increment_value_exceeds_max_fails() {
 
 #[test]
 fn test_errors_decrement_value_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -532,7 +504,6 @@ fn test_errors_decrement_value_success() {
 
 #[test]
 fn test_errors_decrement_value_underflow_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -554,7 +525,6 @@ fn test_errors_decrement_value_underflow_fails() {
 
 #[test]
 fn test_errors_decrement_value_zero_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -579,7 +549,6 @@ fn test_errors_decrement_value_zero_fails() {
 
 #[test]
 fn test_errors_update_name_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -600,7 +569,6 @@ fn test_errors_update_name_success() {
 
 #[test]
 fn test_errors_update_name_empty_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -621,7 +589,6 @@ fn test_errors_update_name_empty_fails() {
 
 #[test]
 fn test_errors_update_name_too_long_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -647,7 +614,6 @@ fn test_errors_update_name_too_long_fails() {
 
 #[test]
 fn test_errors_deactivate_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -672,7 +638,6 @@ fn test_errors_deactivate_success() {
 
 #[test]
 fn test_errors_deactivate_already_inactive_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -706,7 +671,6 @@ fn test_errors_deactivate_already_inactive_fails() {
 
 #[test]
 fn test_errors_reactivate_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -744,7 +708,6 @@ fn test_errors_reactivate_success() {
 
 #[test]
 fn test_errors_reactivate_already_active_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -766,7 +729,6 @@ fn test_errors_reactivate_already_active_fails() {
 
 #[test]
 fn test_errors_operation_on_inactive_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -804,7 +766,6 @@ fn test_errors_operation_on_inactive_fails() {
 
 #[test]
 fn test_errors_initialize_role_registry_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -834,7 +795,6 @@ fn test_errors_initialize_role_registry_success() {
 
 #[test]
 fn test_errors_set_operator_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let operator = funded_keypair_10_sol(&mut svm);
@@ -871,7 +831,6 @@ fn test_errors_set_operator_success() {
 
 #[test]
 fn test_errors_set_operator_not_admin_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let non_admin = funded_keypair_10_sol(&mut svm);
@@ -909,7 +868,6 @@ fn test_errors_set_operator_not_admin_fails() {
 
 #[test]
 fn test_errors_admin_only_action_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -945,7 +903,6 @@ fn test_errors_admin_only_action_success() {
 
 #[test]
 fn test_errors_admin_only_action_not_admin_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let non_admin = funded_keypair_10_sol(&mut svm);
@@ -982,7 +939,6 @@ fn test_errors_admin_only_action_not_admin_fails() {
 
 #[test]
 fn test_errors_operator_action_no_operator_set_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -1018,7 +974,6 @@ fn test_errors_operator_action_no_operator_set_fails() {
 
 #[test]
 fn test_errors_operator_action_by_operator_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let operator = funded_keypair_10_sol(&mut svm);
@@ -1064,7 +1019,6 @@ fn test_errors_operator_action_by_operator_success() {
 
 #[test]
 fn test_errors_operator_action_by_admin_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let operator = funded_keypair_10_sol(&mut svm);
@@ -1110,7 +1064,6 @@ fn test_errors_operator_action_by_admin_success() {
 
 #[test]
 fn test_errors_operator_action_unauthorized_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let admin = funded_keypair_10_sol(&mut svm);
     let operator = funded_keypair_10_sol(&mut svm);
@@ -1161,7 +1114,6 @@ fn test_errors_operator_action_unauthorized_fails() {
 
 #[test]
 fn test_errors_complex_validation_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -1182,7 +1134,6 @@ fn test_errors_complex_validation_success() {
 
 #[test]
 fn test_errors_complex_validation_high_value_requirement_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -1208,7 +1159,6 @@ fn test_errors_complex_validation_high_value_requirement_fails() {
 
 #[test]
 fn test_errors_complex_validation_high_value_requirement_success() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -1239,7 +1189,6 @@ fn test_errors_complex_validation_high_value_requirement_success() {
 
 #[test]
 fn test_errors_full_workflow() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let (authority, error_demo_pda) = setup_error_demo(&mut svm);
     let prog_id = program_id();
@@ -1339,7 +1288,6 @@ fn test_errors_full_workflow() {
 
 #[test]
 fn test_errors_pda_derivation_deterministic() {
-    skip_if_not_built!();
     let authority = solana_keypair::Keypair::new();
 
     // Derive PDA twice - should be identical

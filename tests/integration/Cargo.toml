@@ -151,3 +151,19 @@ path = "events_integration.rs"
 [[test]]
 name = "errors_integration"
 path = "errors_integration.rs"
+
+[[test]]
+name = "has_one_integration"
+path = "has_one_integration.rs"
+
+[[test]]
+name = "init_if_needed_integration"
+path = "init_if_needed_integration.rs"
+
+[[test]]
+name = "realloc_test_integration"
+path = "realloc_test_integration.rs"
+
+[[test]]
+name = "close_account_cpi_test_integration"
+path = "close_account_cpi_test_integration.rs"

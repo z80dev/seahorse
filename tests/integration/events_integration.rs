@@ -23,7 +23,6 @@ use seahorse_integration_tests::*;
 use solana_pubkey::Pubkey;
 use solana_sdk_ids::system_program;
 use solana_signer::Signer;
-use std::path::Path;
 use std::str::FromStr;
 
 /// Events program ID (from declare_id!)
@@ -34,21 +33,6 @@ fn program_id() -> Pubkey {
 /// Path to the compiled program
 const PROGRAM_PATH: &str = "../../target/deploy/events.so";
 
-/// Check if the program is built
-fn program_exists() -> bool {
-    Path::new(PROGRAM_PATH).exists()
-}
-
-/// Macro to skip tests if program doesn't exist
-macro_rules! skip_if_not_built {
-    () => {
-        if !program_exists() {
-            eprintln!("SKIPPED: events.so not found - run ./scripts/build-test-programs.sh first");
-            return;
-        }
-    };
-}
-
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
@@ -58,7 +42,7 @@ fn load_program() -> litesvm::LiteSVM {
     let prog_id = program_id();
 
     let program_bytes = std::fs::read(PROGRAM_PATH)
-        .expect("Failed to read events.so");
+        .expect("Failed to read events.so - run ./scripts/build-test-programs.sh first");
 
     let mut svm = litesvm::LiteSVM::new();
     svm.add_program(prog_id, &program_bytes);
@@ -160,7 +144,6 @@ fn read_authority(data: &[u8]) -> Pubkey {
 
 #[test]
 fn test_events_initialize() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -197,7 +180,6 @@ fn test_events_initialize() {
 
 #[test]
 fn test_events_initialize_different_users() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let prog_id = program_id();
 
@@ -248,7 +230,6 @@ fn test_events_initialize_different_users() {
 
 #[test]
 fn test_emit_simple_event() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -294,7 +275,6 @@ fn test_emit_simple_event() {
 
 #[test]
 fn test_emit_simple_multiple_times() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -342,7 +322,6 @@ fn test_emit_simple_multiple_times() {
 
 #[test]
 fn test_emit_user_action_event() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -389,7 +368,6 @@ fn test_emit_user_action_event() {
 
 #[test]
 fn test_emit_numeric_event() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -436,7 +414,6 @@ fn test_emit_numeric_event() {
 
 #[test]
 fn test_emit_transfer_event() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let recipient = funded_keypair_10_sol(&mut svm);
@@ -484,7 +461,6 @@ fn test_emit_transfer_event() {
 
 #[test]
 fn test_emit_state_change_event() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -531,7 +507,6 @@ fn test_emit_state_change_event() {
 
 #[test]
 fn test_emit_multiple_events() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -577,7 +552,6 @@ fn test_emit_multiple_events() {
 
 #[test]
 fn test_emit_multiple_max_limit() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -619,7 +593,6 @@ fn test_emit_multiple_max_limit() {
 
 #[test]
 fn test_emit_multiple_exceeds_limit() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -661,7 +634,6 @@ fn test_emit_multiple_exceeds_limit() {
 
 #[test]
 fn test_emit_unauthorized_fails() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let other_user = funded_keypair_10_sol(&mut svm);
@@ -704,7 +676,6 @@ fn test_emit_unauthorized_fails() {
 
 #[test]
 fn test_get_counter_info() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();
@@ -744,7 +715,7 @@ fn test_get_counter_info() {
         &empty_data(),
         vec![
             signer_meta(authority.pubkey()),
-            readonly_meta(counter_pda),
+            writable_meta(counter_pda),
         ],
     );
 
@@ -758,7 +729,6 @@ fn test_get_counter_info() {
 
 #[test]
 fn test_full_event_workflow() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let recipient = funded_keypair_10_sol(&mut svm);
@@ -837,7 +807,6 @@ fn test_full_event_workflow() {
 
 #[test]
 fn test_pda_derivation_deterministic() {
-    skip_if_not_built!();
     let mut svm = load_program();
     let authority = funded_keypair_10_sol(&mut svm);
     let prog_id = program_id();

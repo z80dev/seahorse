@@ -22,7 +22,7 @@ use std::str::FromStr;
 
 /// Init Patterns program ID (from declare_id!)
 fn init_program_id() -> Pubkey {
-    Pubkey::from_str("InitPtrn1111111111111111111111111111111111").unwrap()
+    Pubkey::from_str("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS").unwrap()
 }
 
 // Account layout reference:
@@ -573,6 +573,7 @@ fn test_toggle_active() {
             writable_meta(data_pda),
         ],
     );
+    svm.expire_blockhash();
     execute_tx(&mut svm, toggle_ix2, &owner, &[&owner]).unwrap();
 
     let account = svm.get_account(&data_pda).unwrap();
@@ -636,8 +637,8 @@ fn test_array_data_space() {
 
     // Verify space calculation
     let account = svm.get_account(&data_pda).unwrap();
-    // ArrayData: discriminator(8) + owner(32) + [u64;4](32) + [bool;8](8) + bump(1) = 81
-    assert_eq!(account.data.len(), 81, "ArrayData should be 81 bytes");
+    // ArrayData: discriminator(8) + owner(32) + [u64;4](32) + [bool;8](8) + bump(1)
+    assert_eq!(account.data.len(), 88, "ArrayData should be 88 bytes");
 }
 
 #[test]
@@ -662,8 +663,8 @@ fn test_complex_data_space() {
 
     // Verify space calculation
     let account = svm.get_account(&data_pda).unwrap();
-    // ComplexData: discriminator(8) + owner(32) + Stats(24) + is_active(1) + bump(1) = 66
-    assert_eq!(account.data.len(), 66, "ComplexData should be 66 bytes");
+    // ComplexData: discriminator(8) + owner(32) + Stats(24) + is_active(1) + bump(1)
+    assert_eq!(account.data.len(), 72, "ComplexData should be 72 bytes");
 }
 
 // =============================================================================

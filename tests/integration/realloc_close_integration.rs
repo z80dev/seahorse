@@ -18,7 +18,7 @@
 use seahorse_integration_tests::helpers::*;
 use seahorse_integration_tests::*;
 use solana_pubkey::Pubkey;
-use solana_sdk_ids::system_program;
+use solana_sdk_ids::{system_program, sysvar};
 use solana_signer::Signer;
 use std::path::Path;
 use std::str::FromStr;
@@ -271,6 +271,7 @@ fn test_initialize_data() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -314,6 +315,7 @@ fn test_initialize_data_multiple_accounts() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda_1),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -333,6 +335,7 @@ fn test_initialize_data_multiple_accounts() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda_2),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -377,6 +380,7 @@ fn test_grow_account() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -434,6 +438,7 @@ fn test_grow_account_unauthorized() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -483,6 +488,7 @@ fn test_shrink_account() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -539,6 +545,7 @@ fn test_shrink_account_content_too_large() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -588,6 +595,7 @@ fn test_close_data_account() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -640,6 +648,7 @@ fn test_close_data_account_unauthorized() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -689,6 +698,7 @@ fn test_create_record() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(record_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -730,6 +740,7 @@ fn test_record_resize_grow() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(record_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -782,6 +793,7 @@ fn test_record_resize_multiple() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(record_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -858,6 +870,7 @@ fn test_close_record() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(record_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -924,6 +937,7 @@ fn test_full_realloc_close_workflow() {
         vec![
             signer_meta(owner.pubkey()),
             writable_meta(data_pda),
+            readonly_meta(sysvar::rent::id()),
             readonly_meta(system_program::id()),
         ],
     );
@@ -971,7 +985,7 @@ fn test_full_realloc_close_workflow() {
         &get_data_info_data(data_id),
         vec![
             signer_meta(owner.pubkey()),
-            readonly_meta(data_pda),
+            writable_meta(data_pda),
         ],
     );
     let result = execute_tx(&mut svm, info_ix, &owner, &[&owner]);

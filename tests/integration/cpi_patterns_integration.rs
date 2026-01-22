@@ -16,14 +16,13 @@ use seahorse_integration_tests::{
 use seahorse_integration_tests::helpers::{
     anchor_instruction, create_mint_account, create_token_account, execute_tx, funded_keypair,
     get_account_data, readonly_meta, signer_meta, token_program_id, writable_meta,
-    read_token_balance, read_mint_supply, funded_keypair_10_sol,
+    read_token_balance, read_mint_supply, funded_keypair_10_sol, mint_to_instruction,
 };
 use solana_keypair::Keypair;
 use solana_pubkey::Pubkey;
 use solana_rent::Rent;
 use solana_sdk_ids::system_program;
 use solana_signer::Signer;
-use std::path::Path;
 
 /// CPI Patterns program ID
 const PROGRAM_ID: &str = "Cpi1Pattrn111111111111111111111111111111111";
@@ -33,11 +32,6 @@ const PROGRAM_PATH: &str = "../../target/deploy/cpi_patterns.so";
 
 fn program_id() -> Pubkey {
     PROGRAM_ID.parse().unwrap()
-}
-
-/// Check if the CPI patterns program is built
-fn program_exists() -> bool {
-    Path::new(PROGRAM_PATH).exists()
 }
 
 /// CpiVault account layout:
@@ -63,12 +57,9 @@ const MINT_CONFIG_SIZE: usize = 8 + 32 + 32 + 8 + 8 + 1;
 fn load_cpi_patterns_program() -> (LiteSVM, Keypair) {
     let mut svm = LiteSVM::new();
 
-    // Load the program if it exists
-    if program_exists() {
-        let program_bytes = std::fs::read(PROGRAM_PATH)
-            .expect("Failed to read CPI patterns program");
-        svm.add_program(program_id(), &program_bytes);
-    }
+    let program_bytes = std::fs::read(PROGRAM_PATH)
+        .expect("Failed to read CPI patterns program - run ./scripts/build-test-programs.sh");
+    svm.add_program(program_id(), &program_bytes);
 
     let authority = funded_keypair_10_sol(&mut svm);
     (svm, authority)
@@ -134,11 +125,6 @@ fn create_pda_token_account(
 
 #[test]
 fn test_initialize_vault() {
-    if !program_exists() {
-        eprintln!("Skipping test_initialize_vault: program not built. Run ./scripts/build-test-programs.sh");
-        return;
-    }
-
     let (mut svm, authority) = setup_svm();
 
     // Create mint
@@ -151,13 +137,10 @@ fn test_initialize_vault() {
     );
 
     // Derive vault token account PDA
-    let (_vault_token_pda, _) = find_pda(
+    let (vault_token_pda, _) = find_pda(
         &[b"vault_token", authority.pubkey().as_ref(), mint.as_ref()],
         &program_id(),
     );
-
-    // Create vault token account (will be owned by vault PDA)
-    let vault_token_account = create_pda_token_account(&mut svm, &vault_pda, &mint, 0);
 
     // Build instruction
     let ix = anchor_instruction(
@@ -167,7 +150,7 @@ fn test_initialize_vault() {
         vec![
             signer_meta(authority.pubkey()),     // authority
             writable_meta(vault_pda),            // vault
-            writable_meta(vault_token_account),  // vault_token_account
+            writable_meta(vault_token_pda),      // vault_token_account (PDA, init)
             writable_meta(mint),                 // mint
             readonly_meta(solana_sdk_ids::sysvar::rent::id()), // rent
             readonly_meta(system_program::id()), // system_program
@@ -186,11 +169,6 @@ fn test_initialize_vault() {
 
 #[test]
 fn test_basic_transfer_to_vault() {
-    if !program_exists() {
-        eprintln!("Skipping test_basic_transfer_to_vault: program not built. Run ./scripts/build-test-programs.sh");
-        return;
-    }
-
     let (mut svm, authority) = setup_svm();
 
     // Create mint
@@ -279,11 +257,6 @@ fn test_basic_transfer_to_vault_zero_amount_fails() {
 
 #[test]
 fn test_basic_transfer_to_vault_multiple_deposits() {
-    if !program_exists() {
-        eprintln!("Skipping test_basic_transfer_to_vault_multiple_deposits: program not built. Run ./scripts/build-test-programs.sh");
-        return;
-    }
-
     let (mut svm, authority) = setup_svm();
 
     let mint = create_test_mint(&mut svm, &authority.pubkey(), 9);
@@ -352,11 +325,6 @@ fn test_basic_transfer_to_vault_multiple_deposits() {
 
 #[test]
 fn test_pda_signed_transfer_from_vault() {
-    if !program_exists() {
-        eprintln!("Skipping test_pda_signed_transfer_from_vault: program not built. Run ./scripts/build-test-programs.sh");
-        return;
-    }
-
     let (mut svm, authority) = setup_svm();
 
     let mint = create_test_mint(&mut svm, &authority.pubkey(), 9);
@@ -487,11 +455,6 @@ fn test_pda_signed_transfer_insufficient_funds_fails() {
 
 #[test]
 fn test_chained_mint_and_transfer() {
-    if !program_exists() {
-        eprintln!("Skipping test_chained_mint_and_transfer: program not built. Run ./scripts/build-test-programs.sh");
-        return;
-    }
-
     let (mut svm, authority) = setup_svm();
 
     // Derive mint_config PDA
@@ -640,15 +603,13 @@ fn test_chained_mint_and_transfer_exceeds_mint_fails() {
 
 #[test]
 fn test_validated_burn() {
-    if !program_exists() {
-        eprintln!("Skipping test_validated_burn: program not built. Run ./scripts/build-test-programs.sh");
-        return;
-    }
-
     let (mut svm, authority) = setup_svm();
 
     let mint = create_test_mint(&mut svm, &authority.pubkey(), 9);
-    let source_account = create_test_token_account(&mut svm, &authority.pubkey(), &mint, 1000);
+    let source_account = create_test_token_account(&mut svm, &authority.pubkey(), &mint, 0);
+    let mint_to_ix = mint_to_instruction(&mint, &source_account, &authority.pubkey(), 1000);
+    let mint_result = execute_tx(&mut svm, mint_to_ix, &authority, &[&authority]);
+    assert!(mint_result.is_ok(), "Mint_to failed: {:?}", mint_result.err());
 
     // Burn 300 tokens
     let amount: u64 = 300;
@@ -727,11 +688,6 @@ fn test_validated_burn_insufficient_balance_fails() {
 
 #[test]
 fn test_full_vault_workflow_deposit_withdraw() {
-    if !program_exists() {
-        eprintln!("Skipping test_full_vault_workflow_deposit_withdraw: program not built. Run ./scripts/build-test-programs.sh");
-        return;
-    }
-
     let (mut svm, authority) = setup_svm();
 
     let mint = create_test_mint(&mut svm, &authority.pubkey(), 9);
