@@ -957,6 +957,60 @@ class AccountWithKey:
         @returns: Self for method chaining.
         """
 
+    def seeds(self, seeds: List[Any]) -> 'AccountWithKey':
+        """
+        Add PDA seeds constraint to verify this existing account.
+
+        This adds the Anchor #[account(seeds = [...], bump)] constraint which verifies
+        at runtime that the account is the correct PDA derived from the given seeds.
+        Use this to verify an existing PDA account without initializing it.
+
+        Example:
+            @instruction
+            def verify_pda(user: Signer, config: Config):
+                config.seeds([b"config", user.key()])  # Verify it's the right PDA
+
+        This generates:
+            #[account(
+                mut,
+                seeds = [b"config", user.key().as_ref()],
+                bump
+            )]
+            pub config: Account<'info, Config>,
+
+        @param seeds: A list of seed values (bytes, pubkeys, integers, etc.) used to derive the PDA.
+        @returns: Self for method chaining.
+        """
+
+    def bump(self, value: u8) -> 'AccountWithKey':
+        """
+        Specify an explicit bump value for PDA derivation.
+
+        Use this when you have stored the bump and want to use it directly
+        instead of having Anchor derive it. This is more efficient as it
+        avoids the runtime search for a valid bump.
+
+        This should be used in conjunction with seeds() to specify the
+        bump value for PDA verification.
+
+        Example:
+            @instruction
+            def verify_pda(user: Signer, config: Config):
+                # Use stored bump instead of deriving
+                config.seeds([b"config", user.key()]).bump(config.stored_bump)
+
+        This generates:
+            #[account(
+                mut,
+                seeds = [b"config", user.key().as_ref()],
+                bump = config.stored_bump
+            )]
+            pub config: Account<'info, Config>,
+
+        @param value: The bump value (u8) to use for PDA derivation.
+        @returns: Self for method chaining.
+        """
+
 class Account(AccountWithKey):
     """User-defined Solana account."""
 

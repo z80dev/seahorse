@@ -33,6 +33,8 @@ enum Error {
     MisplacedRentExempt,
     MisplacedConstraint,
     MisplacedSeedsProgram,
+    MisplacedSeeds,
+    MisplacedBump,
     TopLevelNonDirective,
     MisplacedDirective,
     MisplacedCpi,
@@ -82,6 +84,12 @@ impl Error {
             }
             Self::MisplacedSeedsProgram => {
                 CoreError::make_raw("account.seeds_program() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedSeeds => {
+                CoreError::make_raw("account.seeds() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedBump => {
+                CoreError::make_raw("account.bump() can only be used inside an @instruction", "")
             }
             Self::TopLevelNonDirective => {
                 CoreError::make_raw("arbitrary expression may not be at the top level of a module", "Hint: the only expressions that can be at the top level of a module are directives, like declare_id.")
@@ -285,6 +293,18 @@ pub enum Transformed {
         expr: TypedExpression,
         name: String,
         constraint: TypedExpression,
+    },
+    /// Adds seeds constraint to an existing (non-init) account for PDA verification
+    AccountSeeds {
+        expr: TypedExpression,
+        name: String,
+        seeds: Vec<TypedExpression>,
+    },
+    /// Sets an explicit bump value for PDA derivation (bump = <expr>)
+    AccountBump {
+        expr: TypedExpression,
+        name: String,
+        bump: TypedExpression,
     },
     Directive(Directive),
 }
@@ -1465,6 +1485,60 @@ impl Context {
                         Ok(expression)
                     } else {
                         Err(Error::MisplacedConstraint.core(loc))
+                    }
+                }
+                Transformed::AccountSeeds {
+                    expr: expression,
+                    name,
+                    seeds,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set seeds
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.seeds = Some(seeds);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedSeeds.core(loc))
+                    }
+                }
+                Transformed::AccountBump {
+                    expr: expression,
+                    name,
+                    bump,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set bump_expr
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.bump_expr = Some(bump);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedBump.core(loc))
                     }
                 }
                 Transformed::Directive(directive) => {

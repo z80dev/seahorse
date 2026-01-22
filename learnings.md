@@ -913,3 +913,242 @@ config_account.seeds_program(config_program.key()).executable()
 ### Additional Changes
 Added `Program.key()` method in `prelude.rs` to allow getting the key of a Program type, which was missing and needed for the `foreign_program.key()` pattern used in seeds_program constraints.
 
+---
+
+## Seeds Constraint for Non-Init Accounts Implementation (2026-01-22)
+
+### Overview
+Implemented the `seeds` constraint for existing (non-init) accounts. This allows specifying PDA seeds to verify that an account matches the expected PDA without initializing it. Previously, seeds could only be specified via `Empty[T].init(payer, seeds=[...])`.
+
+### Anchor Reference
+```rust
+// Verifying an existing PDA without initializing it
+#[account(
+    seeds = [b"config", user.key().as_ref()],
+    bump
+)]
+pub config: Account<'info, Config>,
+```
+
+### Files Modified
+
+1. **`src/core/compile/build/mod.rs`**
+   - Added `AccountSeeds { expr, name, seeds }` variant to `Transformed` enum
+   - Added `MisplacedSeeds` variant to `Error` enum with message: "account.seeds() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountSeeds` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.seeds = Some(seeds)`
+
+2. **`src/core/compile/check/mod.rs`**
+   - Added `"seeds"` method on defined account types (after `"seeds_program"` method)
+   - Takes one argument: `("seeds", Ty::python(Python::List, vec![Ty::Any]), ParamType::Required)`
+   - Returns `Ty::Transformed(Ty::Anonymous(0), ...)` for method chaining
+   - **CRITICAL**: Uses `Transformation::new_with_context(..., Some(ExprContext::Seed))`
+     - This ensures seeds are properly processed (bytes literals, key() calls, etc.)
+   - Produces `Transformed::AccountSeeds { expr, name, seeds }`
+
+3. **`src/core/compile/builtin/prelude.rs`**
+   - Added `seeds` method for `UncheckedAccount`, `TokenMint`, and `TokenAccount` types
+   - Same pattern: uses `Transformation::new_with_context(..., Some(ExprContext::Seed))`
+
+4. **`src/core/generate/mod.rs`**
+   - Updated `AccountAnnotationWithTyExpr::to_tokens()` to include `bump_expr` in destructuring
+   - The codegen for seeds was already implemented (shared with init accounts):
+     ```rust
+     if let Some(seeds) = seeds.as_ref() {
+         if let Some(bump_value) = bump_expr.as_ref() {
+             // Explicit bump: seeds = [...], bump = <expr>
+             params.push(Some(quote! { seeds = [#(#seeds),*], bump = #bump_value }));
+         } else {
+             // Implicit bump: seeds = [...], bump
+             params.push(Some(quote! { seeds = [#(#seeds),*], bump }));
+         }
+     }
+     ```
+
+5. **`data/const/seahorse_prelude.py`**
+   - Added `seeds(self, seeds: List[Any]) -> 'AccountWithKey'` method to `AccountWithKey` class
+   - Includes docstring with usage example
+
+### Usage in Seahorse
+```python
+@instruction
+def verify_pda(
+    user: Signer,
+    config: Config,  # Existing PDA account
+):
+    config.seeds([b"config", user.key()])  # Verify it's the right PDA
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct VerifyPda<'info> {
+    pub user: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [b"config", user.key().as_ref()],
+        bump
+    )]
+    pub config: Account<'info, Config>,
+}
+```
+
+### Method Chaining Examples
+```python
+# Chain with seeds_program constraint for foreign PDAs
+foreign_account.seeds([b"data", user.key()]).seeds_program(other_program.key())
+
+# Chain with constraint for additional validation
+config.seeds([b"config"]).constraint(config.authority == signer.key())
+
+# Chain with bump() to specify explicit bump value
+config.seeds([b"config", user.key()]).bump(config.stored_bump)
+```
+
+### Pattern Notes
+- Takes a list of seed values (bytes, pubkeys, integers, etc.)
+- Returns the account for method chaining
+- **Uses `ExprContext::Seed` context (NOT `AccountAttr`)** because:
+  - Seeds need special handling for bytes literals (`b"..."`)
+  - Seeds need proper handling for `.key()` calls
+  - Seeds may contain integer expressions that need `to_le_bytes()` conversion
+- The codegen is shared with `Empty.init(seeds=[...])` - the `AccountAnnotation.seeds` field is used by both
+- By default, emits bare `bump` (Anchor will derive it); can chain with `.bump(value)` for explicit bump
+- Common use cases:
+  - Verifying PDA addresses for existing accounts
+  - Reading PDAs without initializing them
+  - Cross-instruction PDA validation
+
+### Important: ExprContext::Seed vs ExprContext::AccountAttr
+- `Seed` context: Used for seeds list elements - handles bytes literals, key() calls, integer conversions
+- `AccountAttr` context: Used for constraint expressions - handles raw account field access
+- For the `.seeds()` method, we use `Seed` context because the list contains seed values, not account field expressions
+
+---
+
+## Explicit Bump Constraint Implementation (2026-01-22)
+
+### Overview
+Implemented the `bump = <expr>` constraint for Anchor parity. This allows specifying an explicit bump value for PDA derivation instead of having Anchor derive it at runtime. This is more efficient when the bump is already known (e.g., stored in the account data).
+
+### Anchor Reference
+```rust
+// Implicit bump (Anchor derives it):
+#[account(
+    seeds = [b"config", user.key().as_ref()],
+    bump
+)]
+pub config: Account<'info, Config>,
+
+// Explicit bump (use stored value):
+#[account(
+    seeds = [b"config", user.key().as_ref()],
+    bump = config.stored_bump
+)]
+pub config: Account<'info, Config>,
+```
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `bump_expr: Option<TypedExpression>` field to `AccountAnnotation` struct
+   - Updated `AccountAnnotation::new()` to initialize `bump_expr: None`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added `AccountBump { expr, name, bump }` variant to `Transformed` enum
+   - Added `MisplacedBump` variant to `Error` enum with message: "account.bump() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountBump` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.bump_expr = Some(bump)`
+
+3. **`src/core/compile/builtin/prelude.rs`**
+   - Added `bump` method for `UncheckedAccount` type
+   - Takes one argument: `("value", Ty::prelude(Self::RustInt(false, 8), vec![]), ParamType::Required)` (u8)
+   - Returns `Ty::prelude(Self::UncheckedAccount, vec![])` for method chaining
+   - Uses `Transformation::new_with_context(..., Some(ExprContext::AccountAttr))` for proper context
+   - Produces `Transformed::AccountBump { expr, name, bump }`
+
+4. **`src/core/generate/mod.rs`**
+   - Updated the seeds/bump codegen to handle explicit bump:
+     ```rust
+     // Handle seeds and bump constraints
+     // If explicit bump_expr is provided, emit `bump = <expr>`, otherwise emit bare `bump`
+     if let Some(seeds) = seeds.as_ref() {
+         if let Some(bump_value) = bump_expr.as_ref() {
+             // Explicit bump: seeds = [...], bump = <expr>
+             params.push(Some(quote! { seeds = [#(#seeds),*], bump = #bump_value }));
+         } else {
+             // Implicit bump: seeds = [...], bump
+             params.push(Some(quote! { seeds = [#(#seeds),*], bump }));
+         }
+     } else if bump_expr.is_some() {
+         // bump without seeds - this is valid in Anchor when using seeds::program
+         if let Some(bump_value) = bump_expr.as_ref() {
+             params.push(Some(quote! { bump = #bump_value }));
+         }
+     }
+     ```
+
+5. **`data/const/seahorse_prelude.py`**
+   - Added `bump(self, value: u8) -> 'AccountWithKey'` method to `AccountWithKey` class
+   - Includes docstring with usage example
+
+### Usage in Seahorse
+```python
+@instruction
+def verify_pda_with_stored_bump(
+    user: Signer,
+    config: Config,  # PDA with stored_bump field
+):
+    # Use the stored bump for efficiency (avoids runtime derivation)
+    config.seeds([b"config", user.key()]).bump(config.stored_bump)
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct VerifyPdaWithStoredBump<'info> {
+    pub user: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [b"config", user.key().as_ref()],
+        bump = config.stored_bump
+    )]
+    pub config: Account<'info, Config>,
+}
+```
+
+### Method Chaining Examples
+```python
+# Chain seeds() and bump() together
+config.seeds([b"config", user.key()]).bump(config.stored_bump)
+
+# Chain with constraint for additional validation
+config.seeds([b"config"]).bump(config.bump).constraint(config.authority == signer.key())
+
+# Chain with seeds_program for external PDAs
+foreign_account.seeds([b"data"]).bump(stored_bump).seeds_program(other_program.key())
+```
+
+### Pattern Notes
+- Takes a `u8` expression for the bump value
+- Returns the account for method chaining
+- Uses `ExprContext::AccountAttr` for the bump expression (raw account field access)
+- Should be used with `.seeds()` to specify both seeds and bump together
+- If `.bump()` is called without `.seeds()`, it will still emit `bump = <expr>` (valid in Anchor with seeds::program)
+- The explicit bump is more efficient than implicit bump derivation because:
+  - Avoids the runtime loop that searches for a valid bump
+  - Directly uses the known bump value
+- Common use cases:
+  - Accounts that store their bump as a field
+  - PDAs that need to sign CPIs (bump must be known)
+  - Performance optimization for frequently accessed PDAs
+
+### Important: Bump vs Empty.bump()
+- `.bump(value)` (this implementation): **Sets** an explicit bump value for PDA verification
+- `Empty[T].bump()` (existing): **Gets** the bump value after account initialization
+- These are complementary: you might use `Empty[T].init()` with seeds, then later read that account with `.seeds().bump(stored_bump)`
+

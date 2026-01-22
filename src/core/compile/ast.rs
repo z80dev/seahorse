@@ -234,6 +234,9 @@ pub struct AccountAnnotation {
     /// seeds::program constraint - specify a different program for PDA derivation
     /// Note: Cannot be used with init accounts (Anchor restriction)
     pub seeds_program: Option<TypedExpression>,
+    /// bump = <expr> - explicit bump value for PDA derivation
+    /// When set, emits `bump = <expr>` instead of bare `bump`
+    pub bump_expr: Option<TypedExpression>,
 }
 
 impl AccountAnnotation {
@@ -265,6 +268,7 @@ impl AccountAnnotation {
             rent_exempt: None,
             constraint: None,
             seeds_program: None,
+            bump_expr: None,
         }
     }
 }

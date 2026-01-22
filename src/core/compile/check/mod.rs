@@ -1190,6 +1190,40 @@ impl<'a> Context<'a> {
                                 )
                             )
                         )),
+                        // account.seeds([...]) -> Account (adds seeds constraint for PDA verification)
+                        "seeds" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![
+                                    ("seeds", Ty::python(Python::List, vec![Ty::Any]), ParamType::Required),
+                                ],
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new_with_context(|mut expr, _context_stack| {
+                                        let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        let seeds_list = args.next().unwrap();
+                                        // Extract the list expressions from the seeds argument
+                                        let seeds = match seeds_list.obj {
+                                            ExpressionObj::Vec(values) => values,
+                                            _ => panic!("seeds must be a list"),
+                                        };
+
+                                        // The account.seeds() call returns the account for chaining
+                                        // The actual constraint is via #[account(seeds = [...], bump)]
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountSeeds {
+                                            expr,
+                                            name,
+                                            seeds,
+                                        })
+                                    }, Some(ExprContext::Seed))  // CRITICAL: Use Seed context for seeds list!
+                                )
+                            )
+                        )),
                         _ => self.defined_attr(&path, attr)
                     }
                 })

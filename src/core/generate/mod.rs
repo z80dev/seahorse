@@ -910,6 +910,7 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 rent_exempt,
                 constraint,
                 seeds_program,
+                bump_expr,
             },
             ty_expr,
         ) = self;
@@ -948,11 +949,23 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
         }
 
         params.push(payer.as_ref().map(|payer| quote! { payer = #payer }));
-        params.push(
-            seeds
-                .as_ref()
-                .map(|seeds| quote! { seeds = [#(#seeds),*], bump }),
-        );
+        // Handle seeds and bump constraints
+        // If explicit bump_expr is provided, emit `bump = <expr>`, otherwise emit bare `bump`
+        if let Some(seeds) = seeds.as_ref() {
+            if let Some(bump_value) = bump_expr.as_ref() {
+                // Explicit bump: seeds = [...], bump = <expr>
+                params.push(Some(quote! { seeds = [#(#seeds),*], bump = #bump_value }));
+            } else {
+                // Implicit bump: seeds = [...], bump
+                params.push(Some(quote! { seeds = [#(#seeds),*], bump }));
+            }
+        } else if bump_expr.is_some() {
+            // bump without seeds - this is valid in Anchor when using seeds::program
+            // and could be used independently, though typically bump is used with seeds
+            if let Some(bump_value) = bump_expr.as_ref() {
+                params.push(Some(quote! { bump = #bump_value }));
+            }
+        }
         params.push(
             mint_decimals
                 .as_ref()

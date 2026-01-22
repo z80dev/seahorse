@@ -1217,6 +1217,40 @@ impl BuiltinSource for Prelude {
                     ),
                 ),
             )),
+            // TokenMint.seeds([...]) -> TokenMint (adds seeds constraint for PDA verification)
+            (Self::TokenMint, "seeds") => Some((
+                Ty::prelude(Self::TokenMint, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("seeds", Ty::python(Python::List, vec![Ty::Any]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenMint, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let seeds_list = args.next().unwrap();
+                            // Extract the list expressions from the seeds argument
+                            let seeds = match seeds_list.obj {
+                                ExpressionObj::Vec(values) => values,
+                                _ => panic!("seeds must be a list"),
+                            };
+
+                            // The account.seeds() call returns the account for chaining
+                            // The actual constraint is via #[account(seeds = [...], bump)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountSeeds {
+                                expr,
+                                name,
+                                seeds,
+                            })
+                        }, Some(ExprContext::Seed))  // CRITICAL: Use Seed context for seeds list!
+                    )
+                )
+            )),
             // TokenAccount.transfer(authority = Cast(Account), to = TokenAccount, amount = u64, signer = List[Cast(Seed)]?) -> None
             (Self::TokenAccount, "transfer") => Some((
                 Ty::prelude(Self::TokenAccount, vec![]),
@@ -1509,6 +1543,40 @@ impl BuiltinSource for Prelude {
                     ),
                 ),
             )),
+            // TokenAccount.seeds([...]) -> TokenAccount (adds seeds constraint for PDA verification)
+            (Self::TokenAccount, "seeds") => Some((
+                Ty::prelude(Self::TokenAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("seeds", Ty::python(Python::List, vec![Ty::Any]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let seeds_list = args.next().unwrap();
+                            // Extract the list expressions from the seeds argument
+                            let seeds = match seeds_list.obj {
+                                ExpressionObj::Vec(values) => values,
+                                _ => panic!("seeds must be a list"),
+                            };
+
+                            // The account.seeds() call returns the account for chaining
+                            // The actual constraint is via #[account(seeds = [...], bump)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountSeeds {
+                                expr,
+                                name,
+                                seeds,
+                            })
+                        }, Some(ExprContext::Seed))  // CRITICAL: Use Seed context for seeds list!
+                    )
+                )
+            )),
             // UncheckedAccount.key() -> Pubkey
             (Self::UncheckedAccount, "key") => Some((
                 Ty::prelude(Self::UncheckedAccount, vec![]),
@@ -1706,6 +1774,70 @@ impl BuiltinSource for Prelude {
                                 program: program_expr,
                             })
                         }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the program expression
+                    )
+                )
+            )),
+            // UncheckedAccount.seeds([...]) -> UncheckedAccount (adds seeds constraint for PDA verification)
+            (Self::UncheckedAccount, "seeds") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("seeds", Ty::python(Python::List, vec![Ty::Any]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let seeds_list = args.next().unwrap();
+                            // Extract the list expressions from the seeds argument
+                            let seeds = match seeds_list.obj {
+                                ExpressionObj::Vec(values) => values,
+                                _ => panic!("seeds must be a list"),
+                            };
+
+                            // The account.seeds() call returns the account for chaining
+                            // The actual constraint is via #[account(seeds = [...], bump)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountSeeds {
+                                expr,
+                                name,
+                                seeds,
+                            })
+                        }, Some(ExprContext::Seed))  // CRITICAL: Use Seed context for seeds list!
+                    )
+                )
+            )),
+            // UncheckedAccount.bump(value: u8) -> UncheckedAccount (sets explicit bump for PDA)
+            // Used with seeds() to specify an explicit bump value instead of Anchor deriving it
+            (Self::UncheckedAccount, "bump") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("value", Ty::prelude(Self::RustInt(false, 8), vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let bump_value = args.next().unwrap();
+
+                            // The account.bump() call returns the account for chaining
+                            // The actual constraint is via #[account(bump = <expr>)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountBump {
+                                expr,
+                                name,
+                                bump: bump_value,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for bump expression
                     )
                 )
             )),

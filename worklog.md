@@ -91,6 +91,9 @@ Implementing constraint parity between Seahorse and Anchor as outlined in `const
 | Date | Commit | Description |
 |------|--------|-------------|
 | 2026-01-22 | 6b01a1e | Phase 1: ExprContext::AccountAttr + Empty.bump fix |
+| 2026-01-22 | 6e8b5d7 | Core constraints: address, owner, executable |
+| 2026-01-22 | 9a07641 | Flag constraints: signer, dup, zero |
+| 2026-01-22 | e6aa8c6 | Advanced constraints: constraint=expr, rent_exempt, seeds::program |
 
 ---
 
