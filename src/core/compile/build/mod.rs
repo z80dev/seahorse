@@ -27,6 +27,9 @@ enum Error {
     MisplacedExecutable,
     MisplacedAddress,
     MisplacedOwner,
+    MisplacedZero,
+    MisplacedSigner,
+    MisplacedDup,
     TopLevelNonDirective,
     MisplacedDirective,
     MisplacedCpi,
@@ -58,6 +61,15 @@ impl Error {
             }
             Self::MisplacedOwner => {
                 CoreError::make_raw("account.owner() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedZero => {
+                CoreError::make_raw("account.zero() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedSigner => {
+                CoreError::make_raw("account.signer() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedDup => {
+                CoreError::make_raw("account.dup() can only be used inside an @instruction", "")
             }
             Self::TopLevelNonDirective => {
                 CoreError::make_raw("arbitrary expression may not be at the top level of a module", "Hint: the only expressions that can be at the top level of a module are directives, like declare_id.")
@@ -227,6 +239,21 @@ pub enum Transformed {
         expr: TypedExpression,
         name: String,
         owner: TypedExpression,
+    },
+    /// Marks an account as requiring zero-initialization (pre-allocated and zeroed)
+    AccountZero {
+        expr: TypedExpression,
+        name: String,
+    },
+    /// Marks an account as requiring signer authority
+    AccountSigner {
+        expr: TypedExpression,
+        name: String,
+    },
+    /// Marks an account as allowing duplicate mutable accounts
+    AccountDup {
+        expr: TypedExpression,
+        name: String,
     },
     Directive(Directive),
 }
@@ -1248,6 +1275,84 @@ impl Context {
                         Ok(expression)
                     } else {
                         Err(Error::MisplacedOwner.core(loc))
+                    }
+                }
+                Transformed::AccountZero {
+                    expr: expression,
+                    name,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set zero
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.zero = true;
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedZero.core(loc))
+                    }
+                }
+                Transformed::AccountSigner {
+                    expr: expression,
+                    name,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set signer
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.signer = true;
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedSigner.core(loc))
+                    }
+                }
+                Transformed::AccountDup {
+                    expr: expression,
+                    name,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set dup
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.dup = true;
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedDup.core(loc))
                     }
                 }
                 Transformed::Directive(directive) => {

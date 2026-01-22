@@ -1533,6 +1533,78 @@ impl BuiltinSource for Prelude {
                     )
                 )
             )),
+            // UncheckedAccount.signer() -> UncheckedAccount (for constraint chaining)
+            (Self::UncheckedAccount, "signer") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![],  // no arguments
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            // The account.signer() call returns the account for chaining
+                            // The actual constraint is via #[account(signer)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountSigner {
+                                expr,
+                                name,
+                            })
+                        })
+                    )
+                )
+            )),
+            // UncheckedAccount.zero() -> UncheckedAccount (for constraint chaining)
+            (Self::UncheckedAccount, "zero") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![],  // no arguments
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            // The account.zero() call returns the account for chaining
+                            // The actual constraint is via #[account(zero)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountZero {
+                                expr,
+                                name,
+                            })
+                        })
+                    )
+                )
+            )),
+            // UncheckedAccount.dup() -> UncheckedAccount (for constraint chaining)
+            (Self::UncheckedAccount, "dup") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![],  // no arguments
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            // The account.dup() call returns the account for chaining
+                            // The actual constraint is via #[account(dup)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountDup {
+                                expr,
+                                name,
+                            })
+                        })
+                    )
+                )
+            )),
             _ => None,
         }
     }

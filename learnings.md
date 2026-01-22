@@ -411,3 +411,242 @@ pub struct VerifyAddress<'info> {
 - The method call becomes a no-op in the generated handler code; the actual check is done via the Anchor constraint attribute
 - The address expression is stored as a `TypedExpression` to allow both constant pubkeys and references to other accounts
 
+---
+
+## Signer Constraint Implementation (2026-01-22)
+
+### Overview
+Implemented the `signer` constraint for Anchor parity. This constraint allows marking that an account must be a signer, even if its type isn't `Signer`.
+
+### Anchor Reference
+```rust
+#[account(signer)]
+// Optionally with error:
+#[account(signer @ MyError::MustSign)]
+```
+
+This is useful when you have an `Account<'info, MyData>` that also needs to sign the transaction.
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `signer: bool` field to `AccountAnnotation` struct
+   - Updated `AccountAnnotation::new()` to initialize `signer: false`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added `AccountSigner { expr, name }` variant to `Transformed` enum
+   - Added `MisplacedSigner` variant to `Error` enum with message: "account.signer() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountSigner` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.signer = true`
+
+3. **`src/core/compile/check/mod.rs`**
+   - Added `"signer"` method on account types (after `"dup"` method)
+   - Takes no arguments
+   - Returns `Ty::Transformed(Ty::Anonymous(0), ...)` for method chaining
+   - Produces `Transformed::AccountSigner { expr, name }`
+
+4. **`src/core/generate/mod.rs`**
+   - Added `signer` to the destructuring pattern in `AccountAnnotationWithTyExpr::to_tokens()`
+   - Added codegen for signer constraint:
+     ```rust
+     if *signer {
+         params.push(Some(quote! { signer }));
+     }
+     ```
+
+5. **`data/const/seahorse_prelude.py`**
+   - Added `signer(self) -> 'AccountWithKey'` method to `AccountWithKey` class
+   - Includes docstring explaining the constraint
+
+6. **`src/core/compile/builtin/prelude.rs`**
+   - Added `signer` method for `UncheckedAccount` type
+   - This is necessary because builtin types have their methods defined separately from user-defined Account types
+
+### Usage in Seahorse
+```python
+@instruction
+def multisig_approve(
+    multisig_account: MyMultisigAccount,  # A program-owned account that also needs to sign
+):
+    multisig_account.signer()  # Adds #[account(signer)] constraint
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct MultisigApprove<'info> {
+    #[account(mut, signer)]
+    pub multisig_account: Account<'info, MyMultisigAccount>,
+}
+```
+
+### Pattern Notes
+- This is a simple flag constraint (no expression needed)
+- Returns the account for method chaining
+- Follows the same pattern as `executable` constraint
+- The method call becomes a no-op in the generated handler code; the actual check is done via the Anchor constraint attribute
+- Common use cases: PDAs that sign CPIs, program-owned accounts that need to authorize operations
+
+---
+
+## Zero Constraint Implementation (2026-01-22)
+
+### Overview
+Implemented the `zero` constraint for Anchor parity. This constraint marks an account that was pre-allocated (zeroed) in a previous transaction and now needs to be initialized.
+
+### Anchor Reference
+```rust
+#[account(zero)]
+// The account must have been zeroed in a previous transaction
+```
+
+The `zero` constraint is used as an alternative to `init` when you want to separate the allocation and initialization steps. It is mutually exclusive with `init` and `init_if_needed`.
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `zero: bool` field to `AccountAnnotation` struct
+   - Updated `AccountAnnotation::new()` to initialize `zero: false`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added `AccountZero { expr, name }` variant to `Transformed` enum
+   - Added `MisplacedZero` variant to `Error` enum with message: "account.zero() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountZero` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.zero = true`
+
+3. **`src/core/compile/check/mod.rs`**
+   - Added `"zero"` method on account types (after `"owner"` method)
+   - Takes no arguments
+   - Returns `Ty::Transformed(Ty::Anonymous(0), ...)` for method chaining
+   - Produces `Transformed::AccountZero { expr, name }`
+
+4. **`src/core/generate/mod.rs`**
+   - Added `zero` to the destructuring pattern in `AccountAnnotationWithTyExpr::to_tokens()`
+   - Added codegen for zero constraint:
+     ```rust
+     if *zero {
+         params.push(Some(quote! { zero }));
+     }
+     ```
+
+5. **`data/const/seahorse_prelude.py`**
+   - Added `zero(self) -> 'AccountWithKey'` method to `AccountWithKey` class
+   - Includes docstring explaining the constraint
+
+6. **`src/core/compile/builtin/prelude.rs`**
+   - Added `zero` method for `UncheckedAccount` type
+   - This is necessary because builtin types have their methods defined separately from user-defined Account types
+
+### Usage in Seahorse
+```python
+@instruction
+def initialize_preallocated(
+    preallocated_account: MyAccount,  # Account was zeroed in a previous transaction
+):
+    preallocated_account.zero()  # Adds #[account(zero)] constraint
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct InitializePreallocated<'info> {
+    #[account(mut, zero)]
+    pub preallocated_account: Account<'info, MyAccount>,
+}
+```
+
+### Pattern Notes
+- This is a simple flag constraint (no expression needed)
+- Returns the account for method chaining
+- Follows the same pattern as `executable` and `signer` constraints
+- The method call becomes a no-op in the generated handler code; the actual check is done via the Anchor constraint attribute
+- The `zero` constraint is mutually exclusive with `init` and `init_if_needed` - Anchor will catch this at compile time if users make this mistake
+- Use case: Large accounts that exceed the 10KB CPI limit can be allocated in one transaction (using system program's create_account) and initialized in a subsequent transaction
+
+---
+
+## Dup Constraint Implementation (2026-01-22)
+
+### Overview
+Implemented the `dup` constraint for Anchor parity. This constraint allows duplicate mutable accounts in the same instruction.
+
+### Anchor Reference
+```rust
+#[account(mut, dup)]
+// Optionally with error:
+#[account(mut, dup @ MyError::DuplicateNotAllowed)]
+```
+
+The `dup` constraint is used when you intentionally want to pass the same mutable account twice (which Anchor normally rejects).
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `dup: bool` field to `AccountAnnotation` struct
+   - Updated `AccountAnnotation::new()` to initialize `dup: false`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added `AccountDup { expr, name }` variant to `Transformed` enum
+   - Added `MisplacedDup` variant to `Error` enum with message: "account.dup() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountDup` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.dup = true`
+
+3. **`src/core/compile/check/mod.rs`**
+   - Added `"dup"` method on account types (after `"zero"` method)
+   - Takes no arguments
+   - Returns `Ty::Transformed(Ty::Anonymous(0), ...)` for method chaining
+   - Produces `Transformed::AccountDup { expr, name }`
+
+4. **`src/core/generate/mod.rs`**
+   - Added `dup` to the destructuring pattern in `AccountAnnotationWithTyExpr::to_tokens()`
+   - Added codegen for dup constraint:
+     ```rust
+     if *dup {
+         params.push(Some(quote! { dup }));
+     }
+     ```
+
+5. **`data/const/seahorse_prelude.py`**
+   - Added `dup(self) -> 'AccountWithKey'` method to `AccountWithKey` class
+   - Includes docstring explaining the constraint
+
+6. **`src/core/compile/builtin/prelude.rs`**
+   - Added `dup` method for `UncheckedAccount` type
+   - This is necessary because builtin types have their methods defined separately from user-defined Account types
+
+### Usage in Seahorse
+```python
+@instruction
+def swap_in_place(
+    account_a: TokenAccount,  # Could be same as account_b
+    account_b: TokenAccount,  # Could be same as account_a
+):
+    account_a.dup()  # Adds #[account(mut, dup)] constraint
+    account_b.dup()  # Both accounts need dup if they might be the same
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct SwapInPlace<'info> {
+    #[account(mut, dup)]
+    pub account_a: Account<'info, TokenAccount>,
+    #[account(mut, dup)]
+    pub account_b: Account<'info, TokenAccount>,
+}
+```
+
+### Pattern Notes
+- This is a simple flag constraint (no expression needed)
+- Returns the account for method chaining
+- Follows the same pattern as `executable`, `signer`, and `zero` constraints
+- The method call becomes a no-op in the generated handler code; the actual check is done via the Anchor constraint attribute
+- The `dup` constraint is only meaningful for mutable accounts
+- Use case: Self-swaps, atomic operations where the same account might be both source and destination
+

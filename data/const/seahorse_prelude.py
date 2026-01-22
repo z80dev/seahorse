@@ -888,6 +888,45 @@ class AccountWithKey:
         @returns: Self for method chaining.
         """
 
+    def signer(self) -> 'AccountWithKey':
+        """
+        Mark this account as requiring signer authority.
+
+        This adds the Anchor #[account(signer)] constraint which verifies
+        at runtime that the account has signed the transaction.
+
+        This is useful when you have an Account<'info, MyData> that also
+        needs to sign the transaction.
+
+        @returns: Self for method chaining.
+        """
+
+    def zero(self) -> 'AccountWithKey':
+        """
+        Mark this account as requiring zero-initialization (pre-allocated and zeroed).
+
+        This adds the Anchor #[account(zero)] constraint which is used for accounts
+        that were pre-allocated (zeroed) in a previous transaction and now need to
+        be initialized. This is an alternative to using `init` when you want to
+        separate the allocation and initialization steps.
+
+        Note: The `zero` constraint is mutually exclusive with `init` and `init_if_needed`.
+
+        @returns: Self for method chaining.
+        """
+
+    def dup(self) -> 'AccountWithKey':
+        """
+        Allow this account to be a duplicate of another mutable account in the instruction.
+
+        By default, Anchor rejects instructions where the same mutable account is passed
+        multiple times. This constraint explicitly allows duplicate mutable accounts.
+
+        This adds the Anchor #[account(mut, dup)] constraint.
+
+        @returns: Self for method chaining.
+        """
+
 class Account(AccountWithKey):
     """User-defined Solana account."""
 

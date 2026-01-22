@@ -1064,6 +1064,75 @@ impl<'a> Context<'a> {
                                 )
                             )
                         )),
+                        "zero" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![],  // no arguments
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new(|mut expr| {
+                                        let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        // The account.zero() call returns the account for chaining
+                                        // The actual constraint is via #[account(zero)]
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountZero {
+                                            expr,
+                                            name,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
+                        "dup" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![],  // no arguments
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new(|mut expr| {
+                                        let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        // The account.dup() call returns the account for chaining
+                                        // The actual constraint is via #[account(dup)]
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountDup {
+                                            expr,
+                                            name,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
+                        "signer" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![],  // no arguments
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new(|mut expr| {
+                                        let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        // The account.signer() call returns the account for chaining
+                                        // The actual constraint is via #[account(signer)]
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountSigner {
+                                            expr,
+                                            name,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
                         _ => self.defined_attr(&path, attr)
                     }
                 })

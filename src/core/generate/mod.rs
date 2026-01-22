@@ -904,6 +904,9 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 executable,
                 address,
                 owner,
+                zero,
+                signer,
+                dup,
             },
             ty_expr,
         ) = self;
@@ -1006,6 +1009,18 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
         params.push(address.as_ref().map(|addr| quote! { address = #addr }));
         // Add owner constraint if set
         params.push(owner.as_ref().map(|own| quote! { owner = #own }));
+        // Add zero constraint if set (for pre-allocated zeroed accounts)
+        if *zero {
+            params.push(Some(quote! { zero }));
+        }
+        // Add signer constraint if set
+        if *signer {
+            params.push(Some(quote! { signer }));
+        }
+        // Add dup constraint if set (allows duplicate mutable accounts)
+        if *dup {
+            params.push(Some(quote! { dup }));
+        }
 
         let params = params.into_iter().filter_map(|param| param);
 

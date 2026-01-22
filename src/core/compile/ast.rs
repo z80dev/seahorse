@@ -214,6 +214,12 @@ pub struct AccountAnnotation {
     pub address: Option<TypedExpression>,
     /// owner constraint - enforce account.owner == pubkey
     pub owner: Option<TypedExpression>,
+    /// zero constraint - account must be zeroed (pre-allocated)
+    pub zero: bool,
+    /// signer constraint - verifies the account has signed the transaction
+    pub signer: bool,
+    /// dup constraint - allows duplicate mutable accounts in the same instruction
+    pub dup: bool,
 }
 
 impl AccountAnnotation {
@@ -239,6 +245,9 @@ impl AccountAnnotation {
             executable: false,
             address: None,
             owner: None,
+            zero: false,
+            signer: false,
+            dup: false,
         }
     }
 }
