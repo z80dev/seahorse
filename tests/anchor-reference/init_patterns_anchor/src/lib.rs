@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 // Use same program ID as Seahorse version for parity tests
-declare_id!("InitPtrn1111111111111111111111111111111111");
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
 pub mod init_patterns_anchor {
