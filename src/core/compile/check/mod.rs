@@ -817,8 +817,8 @@ impl<'a> Context<'a> {
                                 Ty::Transformed(
                                     Ty::prelude(Prelude::Pubkey, vec![]).into(),
                                     Transformation::new_with_context(|mut expr, context_stack| {
-                                        if !context_stack.has(&ExprContext::Seed) {
-                                            // If not in a seed, rewrite account.key() to account.borrow().__account__.key()
+                                        if !context_stack.has_any(&[ExprContext::Seed, ExprContext::AccountAttr]) {
+                                            // If not in a seed or account attr, rewrite account.key() to account.borrow().__account__.key()
 
                                             let account = match1!(expr.obj, ExpressionObj::Call { function, .. } => *function);
                                             let account = match1!(account.obj, ExpressionObj::Attribute { value, .. } => *value);

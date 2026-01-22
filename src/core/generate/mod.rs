@@ -1405,7 +1405,7 @@ fn make_lib(
             );
 
             let load_accounts = ix_context.accounts.iter().filter_map(
-                |(name, ContextAccount { account_ty, ty, .. })| {
+                |(name, ContextAccount { account_ty, annotation, ty, .. })| {
                     let name = ident(name);
 
                     // Deconstruct `Empty` accounts
@@ -1444,10 +1444,16 @@ fn make_lib(
                     };
 
                     Some(if is_empty {
+                        // Only set bump when the account has seeds (PDA).
+                        // Anchor's ctx.bumps.<field> only exists for accounts with seed constraints.
+                        let bump_expr = match annotation.as_ref().and_then(|a| a.seeds.as_ref()) {
+                            Some(_) => quote! { Some(ctx.bumps.#name) },
+                            None => quote! { None },
+                        };
                         quote! {
                             let #name = Empty {
                                 account: #loaded,
-                                bump: Some(ctx.bumps.#name)
+                                bump: #bump_expr
                             };
                         }
                     } else {

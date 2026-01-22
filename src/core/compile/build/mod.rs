@@ -87,6 +87,7 @@ pub enum ExprContext {
     Seed,
     Directive,
     Assert,
+    AccountAttr, // Anchor validation scope for constraint expressions
 }
 
 #[derive(Clone, Debug)]
@@ -634,7 +635,7 @@ impl Context {
                 value: {
                     let mut value = self.build_expression(*value, context_stack.clone())?;
 
-                    if value.ty.is_mut() {
+                    if value.ty.is_mut() && !context_stack.has(&ExprContext::AccountAttr) {
                         value.obj = if context_stack.has(&ExprContext::LVal) {
                             ExpressionObj::BorrowMut(value.obj.into())
                         } else {
@@ -665,7 +666,7 @@ impl Context {
                         name,
                     },
                     ty => {
-                        if ty.is_mut() {
+                        if ty.is_mut() && !context_stack.has(&ExprContext::AccountAttr) {
                             // Methods of custom types are impl'd on `Mutable<T>`, not `T` - this
                             // means we should not borrow the value if the attribute leads us to a
                             // function.
@@ -768,7 +769,11 @@ impl Context {
                         .collect::<Result<Vec<_>, CoreError>>()?,
                 );
 
-                if !context_stack.has_any(&[ExprContext::LVal, ExprContext::Seed]) {
+                if !context_stack.has_any(&[
+                    ExprContext::LVal,
+                    ExprContext::Seed,
+                    ExprContext::AccountAttr,
+                ]) {
                     ExpressionObj::Mutable(vec.into())
                 } else {
                     vec
@@ -861,7 +866,11 @@ impl Context {
                     implicit_return: Some(temp.clone().into()),
                 });
 
-                if !context_stack.has_any(&[ExprContext::LVal, ExprContext::Seed]) {
+                if !context_stack.has_any(&[
+                    ExprContext::LVal,
+                    ExprContext::Seed,
+                    ExprContext::AccountAttr,
+                ]) {
                     ExpressionObj::Mutable(block.into())
                 } else {
                     block
@@ -872,6 +881,7 @@ impl Context {
                     ExprContext::Seed,
                     ExprContext::Directive,
                     ExprContext::Assert,
+                    ExprContext::AccountAttr,
                 ]) {
                     ExpressionObj::Literal(Literal::Str(s))
                 } else {

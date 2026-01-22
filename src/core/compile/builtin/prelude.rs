@@ -1649,7 +1649,7 @@ impl BuiltinSource for Prelude {
                     Ty::Transformed(
                         ty.clone().into(),
                         Transformation::new_with_context(|mut expr, context_stack| {
-                            let obj = if context_stack.has(&ExprContext::Seed) {
+                            let obj = if context_stack.has_any(&[ExprContext::Seed, ExprContext::AccountAttr]) {
                                 expr.obj.without_borrows()
                             } else {
                                 expr.obj
@@ -1706,7 +1706,7 @@ impl BuiltinSource for Prelude {
                     Ty::Transformed(
                         ty.clone().into(),
                         Transformation::new_with_context(|mut expr, context_stack| {
-                            let obj = if context_stack.has(&ExprContext::Seed) {
+                            let obj = if context_stack.has_any(&[ExprContext::Seed, ExprContext::AccountAttr]) {
                                 expr.obj.without_borrows()
                             } else {
                                 expr.obj
@@ -1727,7 +1727,7 @@ impl BuiltinSource for Prelude {
                     Ty::Transformed(
                         ty.clone().into(),
                         Transformation::new_with_context(|mut expr, context_stack| {
-                            let obj = if context_stack.has(&ExprContext::Seed) {
+                            let obj = if context_stack.has_any(&[ExprContext::Seed, ExprContext::AccountAttr]) {
                                 expr.obj.without_borrows()
                             } else {
                                 expr.obj
@@ -1752,7 +1752,7 @@ impl BuiltinSource for Prelude {
                     Ty::Transformed(
                         ty.clone().into(),
                         Transformation::new_with_context(|mut expr, context_stack| {
-                            let obj = if context_stack.has(&ExprContext::Seed) {
+                            let obj = if context_stack.has_any(&[ExprContext::Seed, ExprContext::AccountAttr]) {
                                 expr.obj.without_borrows()
                             } else {
                                 expr.obj
@@ -1776,7 +1776,7 @@ impl BuiltinSource for Prelude {
                     Ty::Transformed(
                         ty.clone().into(),
                         Transformation::new_with_context(|mut expr, context_stack| {
-                            let obj = if context_stack.has(&ExprContext::Seed) {
+                            let obj = if context_stack.has_any(&[ExprContext::Seed, ExprContext::AccountAttr]) {
                                 expr.obj.without_borrows()
                             } else {
                                 expr.obj
@@ -1800,7 +1800,7 @@ impl BuiltinSource for Prelude {
                     Ty::Transformed(
                         ty.clone().into(),
                         Transformation::new_with_context(|mut expr, context_stack| {
-                            let obj = if context_stack.has(&ExprContext::Seed) {
+                            let obj = if context_stack.has_any(&[ExprContext::Seed, ExprContext::AccountAttr]) {
                                 expr.obj.without_borrows()
                             } else {
                                 expr.obj

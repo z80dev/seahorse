@@ -319,7 +319,11 @@ impl TypedExpression {
 
     /// Add a move to the expression, if appropriate to do so.
     pub fn moved(mut self, context_stack: &ExprContextStack) -> Self {
-        if !context_stack.has_any(&[ExprContext::Directive, ExprContext::Seed]) {
+        if !context_stack.has_any(&[
+            ExprContext::Directive,
+            ExprContext::Seed,
+            ExprContext::AccountAttr,
+        ]) {
             self.obj = ExpressionObj::Move(self.obj.into());
         }
 
