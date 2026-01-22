@@ -25,3 +25,11 @@ jobs:
         run: ./tests/compile-tests.sh
       - name: Check for any changes
         run: ./tests/check-for-changes.sh
+      # TODO: Tests require .so files built via ./scripts/build-test-programs.sh
+      # This needs Anchor CLI + Solana CLI installed. For now, tests run with continue-on-error.
+      - name: Run parity tests
+        run: cargo test --manifest-path tests/common/Cargo.toml
+        continue-on-error: true
+      - name: Run integration tests
+        run: cargo test --manifest-path tests/integration/Cargo.toml
+        continue-on-error: true

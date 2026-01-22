@@ -48,6 +48,30 @@ mkdir -p "$DEPLOY_DIR"
 BUILT_PROGRAMS=()
 FAILED_PROGRAMS=()
 
+# Add a program to Anchor.toml scripts section once per run
+add_program_to_anchor_toml() {
+    local name="$1"
+    local program_id="$2"
+    local anchor_file="${BUILD_DIR}/Anchor.toml"
+    local seen_file="${BUILD_DIR}/.anchor_scripts_seen"
+
+    mkdir -p "${BUILD_DIR}"
+    touch "$seen_file"
+
+    # Avoid duplicates within a single run
+    if grep -Fxq "$name" "$seen_file"; then
+        return 0
+    fi
+    # Also guard against any pre-existing line in the file
+    if grep -qF "^${name} = " "$anchor_file"; then
+        echo "$name" >> "$seen_file"
+        return 0
+    fi
+
+    echo "${name} = \"${program_id}\"" >> "$anchor_file"
+    echo "$name" >> "$seen_file"
+}
+
 #
 # Build a single program
 # Usage: build_program <name> <rust_source_file>
@@ -106,6 +130,14 @@ build_program() {
         needs_pyth="yes"
     fi
 
+    # Enable init-if-needed feature when generated code uses it
+    local init_if_needed_feature=""
+    local default_features="default = []"
+    if grep -q "init_if_needed" "$rust_source"; then
+        init_if_needed_feature='init-if-needed = ["anchor-lang/init-if-needed"]'
+        default_features='default = ["init-if-needed"]'
+    fi
+
     # Create Cargo.toml for the program
     cat > "${program_dir}/Cargo.toml" << CARGOTML
 [package]
@@ -123,8 +155,9 @@ no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
-default = []
+${default_features}
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+${init_if_needed_feature}
 
 [dependencies]
 anchor-lang = "0.32.0"
@@ -258,9 +291,9 @@ build_seahorse_examples() {
         local name
         name=$(basename "$rs_file" .rs)
 
-        # Add program to Anchor.toml
+        # Add program to Anchor.toml (dedupe to avoid duplicate keys)
         local program_id="Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
-        echo "${name} = \"${program_id}\"" >> "${BUILD_DIR}/Anchor.toml"
+        add_program_to_anchor_toml "$name" "$program_id"
 
         build_program "$name" "$rs_file" || true
     done
@@ -296,9 +329,9 @@ build_reference_programs() {
         # Copy program to build directory
         cp -r "$program_dir" "${BUILD_DIR}/programs/${name}"
 
-        # Add to Anchor.toml
+        # Add to Anchor.toml (dedupe to avoid duplicate keys)
         local program_id="Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
-        echo "${name} = \"${program_id}\"" >> "${BUILD_DIR}/Anchor.toml"
+        add_program_to_anchor_toml "$name" "$program_id"
 
         # Build
         if (cd "$BUILD_DIR" && anchor build -p "$name" 2>&1); then
