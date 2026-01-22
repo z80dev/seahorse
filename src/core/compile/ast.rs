@@ -183,6 +183,13 @@ impl AccountTyExpr {
     }
 }
 
+/// Mode for rent-exempt constraint
+#[derive(Clone, Debug, PartialEq)]
+pub enum RentExemptMode {
+    Skip,
+    Enforce,
+}
+
 /// Content of an Anchor account annotation (#[account(...)]).
 #[derive(Clone, Debug)]
 pub struct AccountAnnotation {
@@ -220,6 +227,13 @@ pub struct AccountAnnotation {
     pub signer: bool,
     /// dup constraint - allows duplicate mutable accounts in the same instruction
     pub dup: bool,
+    /// rent_exempt constraint - control rent exemption enforcement
+    pub rent_exempt: Option<RentExemptMode>,
+    /// constraint - arbitrary boolean expression for account validation
+    pub constraint: Option<TypedExpression>,
+    /// seeds::program constraint - specify a different program for PDA derivation
+    /// Note: Cannot be used with init accounts (Anchor restriction)
+    pub seeds_program: Option<TypedExpression>,
 }
 
 impl AccountAnnotation {
@@ -248,6 +262,9 @@ impl AccountAnnotation {
             zero: false,
             signer: false,
             dup: false,
+            rent_exempt: None,
+            constraint: None,
+            seeds_program: None,
         }
     }
 }

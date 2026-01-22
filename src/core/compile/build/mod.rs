@@ -30,6 +30,9 @@ enum Error {
     MisplacedZero,
     MisplacedSigner,
     MisplacedDup,
+    MisplacedRentExempt,
+    MisplacedConstraint,
+    MisplacedSeedsProgram,
     TopLevelNonDirective,
     MisplacedDirective,
     MisplacedCpi,
@@ -70,6 +73,15 @@ impl Error {
             }
             Self::MisplacedDup => {
                 CoreError::make_raw("account.dup() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedRentExempt => {
+                CoreError::make_raw("account.rent_exempt() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedConstraint => {
+                CoreError::make_raw("account.constraint() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedSeedsProgram => {
+                CoreError::make_raw("account.seeds_program() can only be used inside an @instruction", "")
             }
             Self::TopLevelNonDirective => {
                 CoreError::make_raw("arbitrary expression may not be at the top level of a module", "Hint: the only expressions that can be at the top level of a module are directives, like declare_id.")
@@ -254,6 +266,25 @@ pub enum Transformed {
     AccountDup {
         expr: TypedExpression,
         name: String,
+    },
+    /// Sets the rent_exempt constraint on an account
+    AccountRentExempt {
+        expr: TypedExpression,
+        name: String,
+        mode: RentExemptMode,
+    },
+    /// Sets the seeds::program constraint for PDA derivation using a different program
+    /// Note: Cannot be used with init accounts (Anchor restriction)
+    AccountSeedsProgram {
+        expr: TypedExpression,
+        name: String,
+        program: TypedExpression,
+    },
+    /// Adds an arbitrary constraint expression to an account
+    AccountConstraint {
+        expr: TypedExpression,
+        name: String,
+        constraint: TypedExpression,
     },
     Directive(Directive),
 }
@@ -1353,6 +1384,87 @@ impl Context {
                         Ok(expression)
                     } else {
                         Err(Error::MisplacedDup.core(loc))
+                    }
+                }
+                Transformed::AccountRentExempt {
+                    expr: expression,
+                    name,
+                    mode,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set rent_exempt
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.rent_exempt = Some(mode);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedRentExempt.core(loc))
+                    }
+                }
+                Transformed::AccountSeedsProgram {
+                    expr: expression,
+                    name,
+                    program,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set seeds_program
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.seeds_program = Some(program);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedSeedsProgram.core(loc))
+                    }
+                }
+                Transformed::AccountConstraint {
+                    expr: expression,
+                    name,
+                    constraint,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set constraint
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.constraint = Some(constraint);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedConstraint.core(loc))
                     }
                 }
                 Transformed::Directive(directive) => {

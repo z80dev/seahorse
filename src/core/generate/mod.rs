@@ -907,6 +907,9 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 zero,
                 signer,
                 dup,
+                rent_exempt,
+                constraint,
+                seeds_program,
             },
             ty_expr,
         ) = self;
@@ -1021,6 +1024,17 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
         if *dup {
             params.push(Some(quote! { dup }));
         }
+        // Add rent_exempt constraint if set
+        if let Some(mode) = rent_exempt {
+            params.push(Some(match mode {
+                RentExemptMode::Skip => quote! { rent_exempt = skip },
+                RentExemptMode::Enforce => quote! { rent_exempt = enforce },
+            }));
+        }
+        // Add constraint expression if set
+        params.push(constraint.as_ref().map(|expr| quote! { constraint = #expr }));
+        // Add seeds::program constraint if set (for PDA derivation with different program)
+        params.push(seeds_program.as_ref().map(|prog| quote! { seeds::program = #prog }));
 
         let params = params.into_iter().filter_map(|param| param);
 

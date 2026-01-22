@@ -650,3 +650,266 @@ pub struct SwapInPlace<'info> {
 - The `dup` constraint is only meaningful for mutable accounts
 - Use case: Self-swaps, atomic operations where the same account might be both source and destination
 
+---
+
+## Constraint Expression Implementation (2026-01-22)
+
+### Overview
+Implemented the `constraint = <expr>` constraint for Anchor parity. This is THE most flexible constraint that allows any boolean expression for account validation.
+
+### Anchor Reference
+```rust
+#[account(constraint = <expr>)]
+// With error:
+#[account(constraint = <expr> @ MyError::ConstraintFailed)]
+```
+
+### Critical Implementation Detail
+
+**The expression must be built in `ExprContext::AccountAttr` context because:**
+- Anchor constraint expressions run in `derive(Accounts)` validation scope
+- Variables there are raw Anchor account fields, NOT Seahorse's runtime wrappers
+- We must NOT inject `.borrow()` calls or Move wrappers
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `constraint: Option<TypedExpression>` field to `AccountAnnotation` struct
+   - Updated `AccountAnnotation::new()` to initialize `constraint: None`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added `AccountConstraint { expr, name, constraint }` variant to `Transformed` enum
+   - Added `MisplacedConstraint` variant to `Error` enum with message: "account.constraint() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountConstraint` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.constraint = Some(constraint)`
+
+3. **`src/core/compile/check/mod.rs`**
+   - Added `"constraint"` method on account types (after `"signer"` method)
+   - Takes one argument: `("expr", Ty::python(Python::Bool, vec![]), ParamType::Required)`
+   - Returns `Ty::Transformed(Ty::Anonymous(0), ...)` for method chaining
+   - **CRITICAL**: Uses `Transformation::new_with_context(..., Some(ExprContext::AccountAttr))`
+     - This ensures the expression is built without wrapper-specific code
+   - Produces `Transformed::AccountConstraint { expr, name, constraint }`
+
+4. **`src/core/generate/mod.rs`**
+   - Added `constraint` to the destructuring pattern in `AccountAnnotationWithTyExpr::to_tokens()`
+   - Added codegen for constraint:
+     ```rust
+     params.push(constraint.as_ref().map(|expr| quote! { constraint = #expr }));
+     ```
+
+5. **`data/const/seahorse_prelude.py`**
+   - Added `constraint(self, expr: bool) -> 'AccountWithKey'` method to `AccountWithKey` class
+   - Includes docstring explaining the constraint with example
+
+6. **`src/core/compile/builtin/prelude.rs`**
+   - Added `constraint` method for `UncheckedAccount` type
+   - Same pattern: uses `Transformation::new_with_context(..., Some(ExprContext::AccountAttr))`
+
+### Usage in Seahorse
+```python
+@instruction
+def test_constraint(my_account: MyAccount, authority: Signer):
+    my_account.constraint(my_account.authority == authority.key())
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct TestConstraint<'info> {
+    #[account(mut, constraint = my_account.authority == authority.key())]
+    pub my_account: Account<'info, MyAccount>,
+    pub authority: Signer<'info>,
+}
+```
+
+### Pattern Notes
+- This takes a boolean expression that is evaluated during account validation
+- Returns the account for method chaining
+- The expression is captured as a `TypedExpression` and emitted directly in the codegen
+- **The `Some(ExprContext::AccountAttr)` context is CRITICAL** - it ensures:
+  - No `.borrow()` injection
+  - No `Move` wrapping
+  - No `Mutable` wrapping for collections
+  - Raw account field access (not Seahorse's wrapped types)
+- This is the most general constraint mechanism - can validate any account property
+- Common use cases: Custom authority checks, state validation, complex conditions
+
+---
+
+## Rent Exempt Constraint Implementation (2026-01-22)
+
+### Overview
+Implemented the `rent_exempt` constraint for Anchor parity. This constraint controls whether Anchor enforces rent exemption for an account.
+
+### Anchor Reference
+```rust
+#[account(rent_exempt = skip)]    // Skip rent-exempt check
+#[account(rent_exempt = enforce)] // Enforce rent-exempt (default for init)
+```
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `RentExemptMode` enum with variants `Skip` and `Enforce`
+   - Added `rent_exempt: Option<RentExemptMode>` field to `AccountAnnotation` struct
+   - Updated `AccountAnnotation::new()` to initialize `rent_exempt: None`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added `AccountRentExempt { expr, name, mode }` variant to `Transformed` enum
+   - Added `MisplacedRentExempt` variant to `Error` enum with message: "account.rent_exempt() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountRentExempt` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.rent_exempt = Some(mode)`
+
+3. **`src/core/compile/builtin/prelude.rs`**
+   - Added `rent_exempt` method for `UncheckedAccount` type
+   - Takes a single `mode: str` argument (must be "skip" or "enforce")
+   - Returns the account for method chaining
+   - Produces `Transformed::AccountRentExempt { expr, name, mode }`
+
+4. **`src/core/generate/mod.rs`**
+   - Already had `rent_exempt` field in destructuring pattern
+   - Already had codegen for rent_exempt constraint:
+     ```rust
+     if let Some(mode) = rent_exempt {
+         params.push(Some(match mode {
+             RentExemptMode::Skip => quote! { rent_exempt = skip },
+             RentExemptMode::Enforce => quote! { rent_exempt = enforce },
+         }));
+     }
+     ```
+
+5. **`data/const/seahorse_prelude.py`**
+   - Added `rent_exempt(self, mode: str) -> 'AccountWithKey'` method to `AccountWithKey` class
+   - Includes docstring explaining the constraint
+
+### Usage in Seahorse
+```python
+@instruction
+def handle_legacy_account(
+    legacy_account: UncheckedAccount,
+):
+    legacy_account.rent_exempt("skip")  # Skip rent-exempt check for legacy accounts
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct HandleLegacyAccount<'info> {
+    #[account(rent_exempt = skip)]
+    #[doc="CHECK: This account is unchecked."]
+    pub legacy_account: UncheckedAccount<'info>,
+}
+```
+
+### Pattern Notes
+- This is a string-mode constraint with two valid values: "skip" or "enforce"
+- Returns the account for method chaining
+- The mode is validated at compile time (panics if invalid mode string)
+- Use case: Handling legacy accounts or accounts where rent exemption is managed externally
+- Default behavior (without this constraint): Anchor enforces rent exemption for initialized accounts
+
+---
+
+## Seeds Program Constraint Implementation (2026-01-22)
+
+### Overview
+Implemented the `seeds::program` constraint for Anchor parity. This constraint allows specifying a different program for PDA derivation, enabling verification of PDAs owned by other programs.
+
+### Anchor Reference
+```rust
+#[account(
+    seeds = [...],
+    bump,
+    seeds::program = other_program.key()
+)]
+```
+
+**Important**: According to Anchor docs, `seeds::program` cannot be used with `init` accounts.
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `seeds_program: Option<TypedExpression>` field to `AccountAnnotation` struct
+   - Updated `AccountAnnotation::new()` to initialize `seeds_program: None`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added `AccountSeedsProgram { expr, name, program }` variant to `Transformed` enum
+   - Added `MisplacedSeedsProgram` variant to `Error` enum with message: "account.seeds_program() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountSeedsProgram` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.seeds_program = Some(program)`
+
+3. **`src/core/compile/check/mod.rs`**
+   - Added `"seeds_program"` method on account types (after `"constraint"` method)
+   - Takes one argument: `("program", Ty::prelude(Prelude::Pubkey, vec![]), ParamType::Required)`
+   - Returns `Ty::Transformed(Ty::Anonymous(0), ...)` for method chaining
+   - Uses `Transformation::new_with_context(..., Some(ExprContext::AccountAttr))` for proper context
+   - Produces `Transformed::AccountSeedsProgram { expr, name, program }`
+
+4. **`src/core/generate/mod.rs`**
+   - Already had `seeds_program` in destructuring pattern
+   - Already had codegen for seeds::program constraint:
+     ```rust
+     params.push(seeds_program.as_ref().map(|prog| quote! { seeds::program = #prog }));
+     ```
+
+5. **`src/core/compile/builtin/prelude.rs`**
+   - Added `seeds_program` method for `UncheckedAccount` type
+   - Same pattern: uses `Transformation::new_with_context(..., Some(ExprContext::AccountAttr))`
+   - Also added `Program.key()` method (was missing, needed for `foreign_program.key()`)
+
+### Usage in Seahorse
+```python
+@instruction
+def verify_foreign_pda(
+    user: Signer,
+    foreign_account: UncheckedAccount,
+    foreign_program: Program
+):
+    # Use seeds_program to specify the external program for PDA derivation
+    foreign_account.seeds_program(foreign_program.key())
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct VerifyForeignPda<'info> {
+    #[account(mut)]
+    pub user: Signer<'info>,
+    #[account(mut, seeds::program = foreign_program.key())]
+    #[doc="CHECK: This account is unchecked."]
+    pub foreign_account: UncheckedAccount<'info>,
+    #[account(mut)]
+    #[doc="CHECK: This account is unchecked."]
+    pub foreign_program: UncheckedAccount<'info>,
+}
+```
+
+### Method Chaining Examples
+```python
+# Chain with signer constraint
+foreign_account.seeds_program(foreign_program.key()).signer()
+
+# Chain with executable constraint
+config_account.seeds_program(config_program.key()).executable()
+```
+
+### Pattern Notes
+- Takes a `Pubkey` expression (typically `other_program.key()`)
+- Returns the account for method chaining
+- Uses `ExprContext::AccountAttr` to ensure raw account field access
+- Cannot be used with `init` accounts (Anchor restriction) - Anchor will catch this at compile time
+- Common use cases:
+  - Verifying PDAs from other programs
+  - Cross-program PDA validation
+  - Reading data from external program accounts
+
+### Additional Changes
+Added `Program.key()` method in `prelude.rs` to allow getting the key of a Program type, which was missing and needed for the `foreign_program.key()` pattern used in seeds_program constraints.
+

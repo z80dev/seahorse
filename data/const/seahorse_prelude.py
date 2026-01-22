@@ -927,6 +927,36 @@ class AccountWithKey:
         @returns: Self for method chaining.
         """
 
+    def constraint(self, expr: bool) -> 'AccountWithKey':
+        """
+        Add an arbitrary constraint expression to this account.
+
+        The expression is evaluated during account validation and must return True
+        for the instruction to proceed. This is the most flexible validation method,
+        allowing any boolean expression that references account fields or other
+        instruction parameters.
+
+        This adds the Anchor #[account(constraint = <expr>)] constraint.
+
+        Example:
+            my_account.constraint(my_account.authority == signer.key())
+
+        @param expr: A boolean expression that must be True for validation to pass.
+        @returns: Self for method chaining.
+        """
+
+    def rent_exempt(self, mode: str) -> 'AccountWithKey':
+        """
+        Control rent exemption enforcement for this account.
+
+        This adds the Anchor #[account(rent_exempt = <mode>)] constraint which controls
+        whether the account must be rent-exempt. By default, Anchor enforces rent exemption
+        for initialized accounts.
+
+        @param mode: Either "skip" to skip rent-exempt check, or "enforce" to require it.
+        @returns: Self for method chaining.
+        """
+
 class Account(AccountWithKey):
     """User-defined Solana account."""
 

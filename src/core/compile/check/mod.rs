@@ -1133,6 +1133,63 @@ impl<'a> Context<'a> {
                                 )
                             )
                         )),
+                        "constraint" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![
+                                    ("expr", Ty::python(Python::Bool, vec![]), ParamType::Required),
+                                ],
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new_with_context(|mut expr, _context_stack| {
+                                        let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        let constraint_expr = args.next().unwrap();
+
+                                        // The account.constraint() call returns the account for chaining
+                                        // The actual constraint is via #[account(constraint = ...)]
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountConstraint {
+                                            expr,
+                                            name,
+                                            constraint: constraint_expr,
+                                        })
+                                    }, Some(ExprContext::AccountAttr))  // CRITICAL: Use AccountAttr context!
+                                )
+                            )
+                        )),
+                        "seeds_program" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![
+                                    ("program", Ty::prelude(Prelude::Pubkey, vec![]), ParamType::Required),
+                                ],
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new_with_context(|mut expr, _context_stack| {
+                                        let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        let program_expr = args.next().unwrap();
+
+                                        // The account.seeds_program() call returns the account for chaining
+                                        // The actual constraint is via #[account(seeds::program = ...)]
+                                        // Note: Cannot be used with init (Anchor restriction)
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountSeedsProgram {
+                                            expr,
+                                            name,
+                                            program: program_expr,
+                                        })
+                                    }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the program expression
+                                )
+                            )
+                        )),
                         _ => self.defined_attr(&path, attr)
                     }
                 })

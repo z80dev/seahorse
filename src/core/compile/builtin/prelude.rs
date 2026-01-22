@@ -808,6 +808,11 @@ impl BuiltinSource for Prelude {
                     ),
                 ),
             )),
+            // Program.key() -> Pubkey
+            (Self::Program, "key") => Some((
+                Ty::prelude(Self::Program, vec![]),
+                Ty::new_function(vec![], Ty::prelude(Self::Pubkey, vec![])),
+            )),
             // Program.invoke(accounts: List[CpiAccount], data: List[u8]) -> None
             (Self::Program, "invoke") => Some((
                 Ty::prelude(self.clone(), vec![]),
@@ -1602,6 +1607,105 @@ impl BuiltinSource for Prelude {
                                 name,
                             })
                         })
+                    )
+                )
+            )),
+            // UncheckedAccount.constraint(expr: bool) -> UncheckedAccount (for constraint chaining)
+            (Self::UncheckedAccount, "constraint") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("expr", Ty::python(Python::Bool, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let constraint_expr = args.next().unwrap();
+
+                            // The account.constraint() call returns the account for chaining
+                            // The actual constraint is via #[account(constraint = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountConstraint {
+                                expr,
+                                name,
+                                constraint: constraint_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // CRITICAL: Use AccountAttr context!
+                    )
+                )
+            )),
+            // UncheckedAccount.rent_exempt(mode: str) -> UncheckedAccount (for constraint chaining)
+            (Self::UncheckedAccount, "rent_exempt") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("mode", Ty::python(Python::Str, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let mode_arg = args.next().unwrap();
+                            let mode = match &mode_arg.obj {
+                                ExpressionObj::Literal(Literal::Str(s)) => {
+                                    match s.as_str() {
+                                        "skip" => RentExemptMode::Skip,
+                                        "enforce" => RentExemptMode::Enforce,
+                                        _ => panic!("rent_exempt mode must be 'skip' or 'enforce'"),
+                                    }
+                                }
+                                _ => panic!("rent_exempt mode must be a string literal"),
+                            };
+
+                            // The account.rent_exempt() call returns the account for chaining
+                            // The actual constraint is via #[account(rent_exempt = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountRentExempt {
+                                expr,
+                                name,
+                                mode,
+                            })
+                        })
+                    )
+                )
+            )),
+            // UncheckedAccount.seeds_program(program: Pubkey) -> UncheckedAccount (for constraint chaining)
+            // Specifies a different program for PDA derivation
+            // Note: Cannot be used with init accounts (Anchor restriction)
+            (Self::UncheckedAccount, "seeds_program") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("program", Ty::prelude(Self::Pubkey, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let program_expr = args.next().unwrap();
+
+                            // The account.seeds_program() call returns the account for chaining
+                            // The actual constraint is via #[account(seeds::program = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountSeedsProgram {
+                                expr,
+                                name,
+                                program: program_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the program expression
                     )
                 )
             )),
