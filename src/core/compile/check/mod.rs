@@ -985,6 +985,85 @@ impl<'a> Context<'a> {
                                 )
                             )
                         )),
+                        "executable" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![],  // no arguments
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new(|mut expr| {
+                                        let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        // The account.executable() call returns the account for chaining
+                                        // The actual constraint is via #[account(executable)]
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountExecutable {
+                                            expr,
+                                            name,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
+                        "address" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![
+                                    ("pubkey", Ty::prelude(Prelude::Pubkey, vec![]), ParamType::Required),
+                                ],
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new(|mut expr| {
+                                        let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        let address = args.next().unwrap();
+
+                                        // The account.address() call returns the account for chaining
+                                        // The actual constraint is via #[account(address = ...)]
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountAddress {
+                                            expr,
+                                            name,
+                                            address,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
+                        "owner" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![
+                                    ("pubkey", Ty::prelude(Prelude::Pubkey, vec![]), ParamType::Required),
+                                ],
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new(|mut expr| {
+                                        let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        let owner = args.next().unwrap();
+
+                                        // The account.owner() call returns the account for chaining
+                                        // The actual constraint is via #[account(owner = ...)]
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountOwner {
+                                            expr,
+                                            name,
+                                            owner,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
                         _ => self.defined_attr(&path, attr)
                     }
                 })

@@ -901,6 +901,9 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 realloc_zero,
                 close,
                 has_one,
+                executable,
+                address,
+                owner,
             },
             ty_expr,
         ) = self;
@@ -995,6 +998,14 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
             let target_ident = ident(target);
             params.push(Some(quote! { has_one = #target_ident }));
         }
+        // Add executable constraint if set
+        if *executable {
+            params.push(Some(quote! { executable }));
+        }
+        // Add address constraint if set
+        params.push(address.as_ref().map(|addr| quote! { address = #addr }));
+        // Add owner constraint if set
+        params.push(owner.as_ref().map(|own| quote! { owner = #own }));
 
         let params = params.into_iter().filter_map(|param| param);
 

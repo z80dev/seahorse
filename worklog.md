@@ -90,6 +90,7 @@ Implementing constraint parity between Seahorse and Anchor as outlined in `const
 
 | Date | Commit | Description |
 |------|--------|-------------|
+| 2026-01-22 | 6b01a1e | Phase 1: ExprContext::AccountAttr + Empty.bump fix |
 
 ---
 

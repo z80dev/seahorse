@@ -24,6 +24,9 @@ enum Error {
     MisplacedRealloc,
     MisplacedClose,
     MisplacedHasOne,
+    MisplacedExecutable,
+    MisplacedAddress,
+    MisplacedOwner,
     TopLevelNonDirective,
     MisplacedDirective,
     MisplacedCpi,
@@ -46,6 +49,15 @@ impl Error {
             }
             Self::MisplacedHasOne => {
                 CoreError::make_raw("account.has_one() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedExecutable => {
+                CoreError::make_raw("account.executable() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedAddress => {
+                CoreError::make_raw("account.address() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedOwner => {
+                CoreError::make_raw("account.owner() can only be used inside an @instruction", "")
             }
             Self::TopLevelNonDirective => {
                 CoreError::make_raw("arbitrary expression may not be at the top level of a module", "Hint: the only expressions that can be at the top level of a module are directives, like declare_id.")
@@ -198,6 +210,23 @@ pub enum Transformed {
         expr: TypedExpression,
         name: String,
         target: String,  // Just the identifier name, not full expression
+    },
+    /// Marks an account as executable (must be a program)
+    AccountExecutable {
+        expr: TypedExpression,
+        name: String,
+    },
+    /// Sets the address constraint on an account
+    AccountAddress {
+        expr: TypedExpression,
+        name: String,
+        address: TypedExpression,
+    },
+    /// Adds an owner constraint to verify account ownership
+    AccountOwner {
+        expr: TypedExpression,
+        name: String,
+        owner: TypedExpression,
     },
     Directive(Directive),
 }
@@ -1139,6 +1168,86 @@ impl Context {
                         Ok(expression)
                     } else {
                         Err(Error::MisplacedHasOne.core(loc))
+                    }
+                }
+                Transformed::AccountExecutable {
+                    expr: expression,
+                    name,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set executable
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.executable = true;
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedExecutable.core(loc))
+                    }
+                }
+                Transformed::AccountAddress {
+                    expr: expression,
+                    name,
+                    address,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set address
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.address = Some(address);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedAddress.core(loc))
+                    }
+                }
+                Transformed::AccountOwner {
+                    expr: expression,
+                    name,
+                    owner,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set owner
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.owner = Some(owner);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedOwner.core(loc))
                     }
                 }
                 Transformed::Directive(directive) => {

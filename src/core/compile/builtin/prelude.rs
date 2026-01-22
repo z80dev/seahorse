@@ -1509,6 +1509,30 @@ impl BuiltinSource for Prelude {
                 Ty::prelude(Self::UncheckedAccount, vec![]),
                 Ty::new_function(vec![], Ty::prelude(Self::Pubkey, vec![])),
             )),
+            // UncheckedAccount.executable() -> UncheckedAccount (for constraint chaining)
+            (Self::UncheckedAccount, "executable") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![],  // no arguments
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            // The account.executable() call returns the account for chaining
+                            // The actual constraint is via #[account(executable)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountExecutable {
+                                expr,
+                                name,
+                            })
+                        })
+                    )
+                )
+            )),
             _ => None,
         }
     }

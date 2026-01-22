@@ -856,6 +856,38 @@ class AccountWithKey:
     def key(self) -> Pubkey:
         """Get this account's key."""
 
+    def executable(self) -> 'AccountWithKey':
+        """
+        Mark this account as executable (i.e., it must be a program).
+
+        This adds the Anchor #[account(executable)] constraint which verifies
+        at runtime that the account is an executable program.
+
+        @returns: Self for method chaining.
+        """
+
+    def address(self, pubkey: Pubkey) -> 'AccountWithKey':
+        """
+        Require this account to have a specific address (pubkey).
+
+        This adds the Anchor #[account(address = <pubkey>)] constraint which verifies
+        at runtime that the account's key matches the expected pubkey.
+
+        @param pubkey: The expected pubkey for this account.
+        @returns: Self for method chaining.
+        """
+
+    def owner(self, pubkey: Pubkey) -> 'AccountWithKey':
+        """
+        Require this account to be owned by a specific program.
+
+        This adds the Anchor #[account(owner = <pubkey>)] constraint which verifies
+        at runtime that the account's owner matches the expected program pubkey.
+
+        @param pubkey: The expected owner (program) pubkey for this account.
+        @returns: Self for method chaining.
+        """
+
 class Account(AccountWithKey):
     """User-defined Solana account."""
 

@@ -208,6 +208,12 @@ pub struct AccountAnnotation {
     /// has_one constraints - enforce account.field == field.key()
     /// Stores just the identifier names (e.g., "authority") not full expressions
     pub has_one: Vec<String>,
+    /// executable constraint - verifies the account is executable (a program)
+    pub executable: bool,
+    /// address constraint - enforce account.key() == pubkey
+    pub address: Option<TypedExpression>,
+    /// owner constraint - enforce account.owner == pubkey
+    pub owner: Option<TypedExpression>,
 }
 
 impl AccountAnnotation {
@@ -230,6 +236,9 @@ impl AccountAnnotation {
             padding: None,
             close: None,
             has_one: Vec::new(),
+            executable: false,
+            address: None,
+            owner: None,
         }
     }
 }
