@@ -15,7 +15,7 @@
 use anchor_lang::prelude::*;
 
 // Same program ID as Seahorse version for parity testing
-declare_id!("VoteSimp1e111111111111111111111111111111111");
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
 pub mod voting_anchor {

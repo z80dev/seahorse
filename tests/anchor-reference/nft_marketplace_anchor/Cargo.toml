@@ -21,3 +21,6 @@ anchor-spl = "0.32.0"
 
 # Pin blake3 to avoid edition 2024 requirement
 blake3 = "=1.8.2"
+
+[profile.release]
+overflow-checks = true
