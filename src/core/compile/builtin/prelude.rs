@@ -583,6 +583,190 @@ impl BuiltinSource for Prelude {
                     ),
                 ),
             )),
+            // Empty[T].init_if_needed(...) -> T
+            // Like init(), but uses Anchor's init_if_needed constraint
+            // which only initializes if the account doesn't already exist
+            (Self::Empty, "init_if_needed") => Some((
+                Ty::prelude(Self::Empty, vec![Ty::Anonymous(0)]),
+                Ty::new_function(
+                    vec![
+                        (
+                            "payer",
+                            Ty::Cast(Ty::prelude(Self::InitAccount, vec![]).into()),
+                            ParamType::Required,
+                        ),
+                        (
+                            "seeds",
+                            Ty::new_list(Ty::Cast(Ty::prelude(Self::Seed, vec![]).into())),
+                            ParamType::Optional,
+                        ),
+                        (
+                            "mint",
+                            Ty::prelude(Self::TokenMint, vec![]),
+                            ParamType::Optional,
+                        ),
+                        (
+                            "authority",
+                            Ty::Cast(Ty::prelude(Self::InitAccount, vec![]).into()),
+                            ParamType::Optional,
+                        ),
+                        (
+                            "decimals",
+                            Ty::prelude(Self::RustInt(false, 8), vec![]),
+                            ParamType::Optional,
+                        ),
+                        (
+                            "associated",
+                            Ty::python(Python::Bool, vec![]),
+                            ParamType::Optional,
+                        ),
+                        (
+                            "space",
+                            Ty::prelude(Self::RustInt(false, 64), vec![]),
+                            ParamType::Optional,
+                        ),
+                        (
+                            "padding",
+                            Ty::prelude(Self::RustInt(false, 64), vec![]),
+                            ParamType::Optional,
+                        ),
+                    ],
+                    Ty::Transformed(
+                        Ty::Anonymous(0).into(),
+                        Transformation::new_with_context(
+                            |mut expr, _| {
+                                let (function, args) = match1!(expr.obj, ExpressionObj::Call { function, args } => (function, args));
+                                let empty = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                let name =
+                                    match1!(&empty.obj, ExpressionObj::Id(var) => var.clone());
+                                let mut args = args.into_iter();
+
+                                let mut annotation = AccountAnnotation::new();
+                                annotation.is_mut = false;
+                                annotation.init_if_needed = true;
+
+                                let payer = args.next().unwrap();
+                                let seeds = args.next().unwrap().optional();
+
+                                let mint = args.next().unwrap().optional();
+                                let authority = args.next().unwrap().optional();
+                                let decimals = args.next().unwrap().optional();
+                                let associated = match args.next().unwrap().obj {
+                                    ExpressionObj::Literal(Literal::Bool(associated)) => {
+                                        Some(associated)
+                                    }
+                                    ExpressionObj::Placeholder => None,
+                                    _ => {
+                                        return Err(CoreError::make_raw(
+                                        "invalid argument to Empty.init_if_needed()",
+                                        "Hint: if you provide a value for \"associated\", it must be a boolean literal."
+                                    ));
+                                    }
+                                };
+                                let space = args.next().unwrap().optional();
+                                let padding = args.next().unwrap().optional();
+
+                                annotation.payer = Some(payer);
+                                annotation.seeds = seeds.map(|seeds| {
+                                    let seeds =
+                                        match1!(seeds.obj, ExpressionObj::Vec(list) => list);
+                                    seeds
+                                });
+
+                                match &expr.ty {
+                                    Ty::Generic(name, _) => match name {
+                                        TyName::Defined(_, DefinedType::Account) => {
+                                            if mint.is_some()
+                                                || authority.is_some()
+                                                || decimals.is_some()
+                                                || associated.is_some()
+                                            {
+                                                return Err(CoreError::make_raw(
+                                                "invalid argument to Empty.init_if_needed() for a program account",
+                                                "Hint: you can only pass in a payer and optionally a list of seeds."
+                                            ));
+                                            }
+
+                                            if space.is_some() && padding.is_some() {
+                                                return Err(CoreError::make_raw(
+                                                "invalid argument to Empty.init_if_needed() for a program account",
+                                                "Hint: you can only pass one of space and padding",
+                                            ));
+                                            }
+
+                                            annotation.space = space;
+                                            annotation.padding = padding;
+                                        }
+
+                                        TyName::Builtin(Builtin::Prelude(Self::TokenMint)) => {
+                                            if mint.is_some()
+                                                || authority.is_none()
+                                                || decimals.is_none()
+                                                || associated.is_some()
+                                                || space.is_some()
+                                            {
+                                                return Err(CoreError::make_raw(
+                                                "invalid argument to Empty[TokenMint].init_if_needed()",
+                                                "Hint: you can only pass in a payer, an authority, a number of decimals, and optionally a list of seeds."
+                                            ));
+                                            }
+
+                                            annotation.mint_authority = authority;
+                                            annotation.mint_decimals = decimals;
+                                        }
+                                        TyName::Builtin(Builtin::Prelude(Self::TokenAccount)) => {
+                                            if mint.is_none()
+                                                || authority.is_none()
+                                                || decimals.is_some()
+                                                || space.is_some()
+                                            {
+                                                return Err(CoreError::make_raw(
+                                                "invalid argument to Empty[TokenAccount].init_if_needed()",
+                                                "Hint: you can only pass in a payer, an authority, a mint, and optionally a list of seeds."
+                                            ));
+                                            }
+
+                                            if annotation.seeds.is_some()
+                                                && associated == Some(true)
+                                            {
+                                                return Err(CoreError::make_raw(
+                                                "invalid argument to Empty[TokenAccount].init_if_needed()",
+                                                "Hint: you may not initialize an associated token account with seeds."
+                                            ));
+                                            }
+
+                                            annotation.token_authority = authority;
+                                            annotation.token_mint = mint;
+
+                                            if associated == Some(true) {
+                                                annotation.is_associated = true;
+                                            }
+                                        }
+                                        _ => {
+                                            return Err(CoreError::make_raw(
+                                            format!("could not initialize account type \"{}\"", expr.ty),
+                                            "Help: you can only initialize program accounts (owned by your program), SPL token mints, and SPL token accounts."
+                                        ));
+                                        }
+                                    },
+                                    _ => panic!(),
+                                }
+
+                                expr.obj = ExpressionObj::Rendered(quote! {
+                                    #empty.account.clone()
+                                });
+
+                                Ok(Transformed::AccountInit {
+                                    expr,
+                                    name,
+                                    annotation,
+                                })
+                            },
+                            Some(ExprContext::Seed),
+                        ),
+                    ),
+                ),
+            )),
             // Empty[T].bump() -> u8
             (Self::Empty, "bump") => Some((
                 Ty::prelude(Self::Empty, vec![Ty::Anonymous(0)]),
@@ -1101,6 +1285,157 @@ impl BuiltinSource for Prelude {
                     ),
                 ),
             )),
+            // TokenAccount.transfer_checked(authority = Cast(Account), to = TokenAccount, mint = TokenMint, amount = u64, decimals = u8, signer = List[Cast(Seed)]?) -> None
+            (Self::TokenAccount, "transfer_checked") => Some((
+                Ty::prelude(Self::TokenAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        (
+                            "authority",
+                            Ty::Cast(Ty::prelude(Self::Account, vec![]).into()),
+                            ParamType::Required,
+                        ),
+                        (
+                            "to",
+                            Ty::prelude(Self::TokenAccount, vec![]),
+                            ParamType::Required,
+                        ),
+                        (
+                            "mint",
+                            Ty::prelude(Self::TokenMint, vec![]),
+                            ParamType::Required,
+                        ),
+                        (
+                            "amount",
+                            Ty::prelude(Self::RustInt(false, 64), vec![]),
+                            ParamType::Required,
+                        ),
+                        (
+                            "decimals",
+                            Ty::prelude(Self::RustInt(false, 8), vec![]),
+                            ParamType::Required,
+                        ),
+                        (
+                            "signer",
+                            Ty::new_list(Ty::Cast(Ty::prelude(Self::Seed, vec![]).into())),
+                            ParamType::Optional,
+                        ),
+                    ],
+                    Ty::Transformed(
+                        Ty::python(Python::Tuple, vec![]).into(),
+                        Transformation::new(|mut expr| {
+                            let (function, args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args));
+                            let from = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let mut args = args.into_iter();
+                            let authority = args.next().unwrap();
+                            let to = args.next().unwrap();
+                            let mint = args.next().unwrap();
+                            let amount = args.next().unwrap();
+                            let decimals = args.next().unwrap();
+                            let signer = args.next().unwrap();
+
+                            let program_and_accounts = quote! {
+                                #from.programs.get("token_program"),
+                                token::TransferChecked {
+                                    from: #from.to_account_info(),
+                                    authority: #authority.to_account_info(),
+                                    to: #to.to_account_info(),
+                                    mint: #mint.to_account_info(),
+                                }
+                            };
+
+                            let cpi_context = match signer.obj {
+                                ExpressionObj::Placeholder => quote! {
+                                    CpiContext::new(#program_and_accounts)
+                                },
+                                seeds => quote! {
+                                    CpiContext::new_with_signer(
+                                        #program_and_accounts,
+                                        &[#seeds.borrow().as_slice()]
+                                    )
+                                },
+                            };
+
+                            expr.obj = ExpressionObj::Rendered(quote! {
+                                token::transfer_checked(
+                                    #cpi_context,
+                                    #amount,
+                                    #decimals
+                                ).unwrap();
+                            });
+
+                            Ok(Transformed::Cpi {
+                                expr,
+                                program: AccountTyExpr::TokenProgram,
+                            })
+                        }),
+                    ),
+                ),
+            )),
+            // TokenAccount.close_account(authority = Cast(Account), destination = Cast(Account), signer = List[Cast(Seed)]?) -> None
+            (Self::TokenAccount, "close_account") => Some((
+                Ty::prelude(Self::TokenAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        (
+                            "authority",
+                            Ty::Cast(Ty::prelude(Self::Account, vec![]).into()),
+                            ParamType::Required,
+                        ),
+                        (
+                            "destination",
+                            Ty::Cast(Ty::prelude(Self::Account, vec![]).into()),
+                            ParamType::Required,
+                        ),
+                        (
+                            "signer",
+                            Ty::new_list(Ty::Cast(Ty::prelude(Self::Seed, vec![]).into())),
+                            ParamType::Optional,
+                        ),
+                    ],
+                    Ty::Transformed(
+                        Ty::python(Python::Tuple, vec![]).into(),
+                        Transformation::new(|mut expr| {
+                            let (function, args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let mut args = args.into_iter();
+                            let authority = args.next().unwrap();
+                            let destination = args.next().unwrap();
+                            let signer = args.next().unwrap();
+
+                            let program_and_accounts = quote! {
+                                #account.programs.get("token_program"),
+                                token::CloseAccount {
+                                    account: #account.to_account_info(),
+                                    destination: #destination.to_account_info(),
+                                    authority: #authority.to_account_info()
+                                }
+                            };
+
+                            let cpi_context = match signer.obj {
+                                ExpressionObj::Placeholder => quote! {
+                                    CpiContext::new(#program_and_accounts)
+                                },
+                                seeds => quote! {
+                                    CpiContext::new_with_signer(
+                                        #program_and_accounts,
+                                        &[#seeds.borrow().as_slice()]
+                                    )
+                                },
+                            };
+
+                            expr.obj = ExpressionObj::Rendered(quote! {
+                                token::close_account(#cpi_context).unwrap();
+                            });
+
+                            Ok(Transformed::Cpi {
+                                expr,
+                                program: AccountTyExpr::TokenProgram,
+                            })
+                        }),
+                    ),
+                ),
+            )),
             // TokenAccount.key() -> Pubkey
             (Self::TokenAccount, "key") => Some((
                 Ty::prelude(Self::TokenAccount, vec![]),
@@ -1313,14 +1648,18 @@ impl BuiltinSource for Prelude {
                     Ty::prelude(self.clone(), vec![]),
                     Ty::Transformed(
                         ty.clone().into(),
-                        Transformation::new(|mut expr| {
-                            let obj = expr.obj.without_borrows();
+                        Transformation::new_with_context(|mut expr, context_stack| {
+                            let obj = if context_stack.has(&ExprContext::Seed) {
+                                expr.obj.without_borrows()
+                            } else {
+                                expr.obj
+                            };
                             expr.obj = ExpressionObj::Rendered(quote! {
                                 #obj.to_le_bytes().as_ref()
                             });
 
                             Ok(Transformed::Expression(expr))
-                        }),
+                        }, None),
                     ),
                 )),
                 _ => None,
@@ -1366,14 +1705,18 @@ impl BuiltinSource for Prelude {
                     Ty::prelude(self.clone(), vec![]).into(),
                     Ty::Transformed(
                         ty.clone().into(),
-                        Transformation::new(|mut expr| {
-                            let obj = expr.obj.without_borrows();
+                        Transformation::new_with_context(|mut expr, context_stack| {
+                            let obj = if context_stack.has(&ExprContext::Seed) {
+                                expr.obj.without_borrows()
+                            } else {
+                                expr.obj
+                            };
                             expr.obj = ExpressionObj::Rendered(quote! {
                                 #obj.key().as_ref()
                             });
 
                             Ok(Transformed::Expression(expr))
-                        }),
+                        }, None),
                     ),
                 )),
                 _ => None,
@@ -1383,14 +1726,18 @@ impl BuiltinSource for Prelude {
                     Ty::prelude(self.clone(), vec![]).into(),
                     Ty::Transformed(
                         ty.clone().into(),
-                        Transformation::new(|mut expr| {
-                            let obj = expr.obj.without_borrows();
+                        Transformation::new_with_context(|mut expr, context_stack| {
+                            let obj = if context_stack.has(&ExprContext::Seed) {
+                                expr.obj.without_borrows()
+                            } else {
+                                expr.obj
+                            };
                             expr.obj = ExpressionObj::Rendered(quote! {
                                 #obj.as_ref()
                             });
 
                             Ok(Transformed::Expression(expr))
-                        }),
+                        }, None),
                     ),
                 )),
                 _ => None,
@@ -1404,14 +1751,18 @@ impl BuiltinSource for Prelude {
                     Ty::prelude(self.clone(), vec![]).into(),
                     Ty::Transformed(
                         ty.clone().into(),
-                        Transformation::new(|mut expr| {
-                            let obj = expr.obj.without_borrows();
+                        Transformation::new_with_context(|mut expr, context_stack| {
+                            let obj = if context_stack.has(&ExprContext::Seed) {
+                                expr.obj.without_borrows()
+                            } else {
+                                expr.obj
+                            };
                             expr.obj = ExpressionObj::Rendered(quote! {
                                 #obj.key().as_ref()
                             });
 
                             Ok(Transformed::Expression(expr))
-                        }),
+                        }, None),
                     ),
                 )),
                 _ => None,
@@ -1424,14 +1775,18 @@ impl BuiltinSource for Prelude {
                     Ty::prelude(self.clone(), vec![]).into(),
                     Ty::Transformed(
                         ty.clone().into(),
-                        Transformation::new(|mut expr| {
-                            let obj = expr.obj.without_borrows();
+                        Transformation::new_with_context(|mut expr, context_stack| {
+                            let obj = if context_stack.has(&ExprContext::Seed) {
+                                expr.obj.without_borrows()
+                            } else {
+                                expr.obj
+                            };
                             expr.obj = ExpressionObj::Rendered(quote! {
                                 #obj.key().as_ref()
                             });
 
                             Ok(Transformed::Expression(expr))
-                        }),
+                        }, None),
                     ),
                 )),
                 _ => None,
@@ -1444,15 +1799,18 @@ impl BuiltinSource for Prelude {
                     Ty::prelude(self.clone(), vec![]).into(),
                     Ty::Transformed(
                         ty.clone().into(),
-                        Transformation::new(|mut expr| {
-                            // Remove the borrows from the account, then return immediately
-                            let obj = expr.obj.without_borrows();
+                        Transformation::new_with_context(|mut expr, context_stack| {
+                            let obj = if context_stack.has(&ExprContext::Seed) {
+                                expr.obj.without_borrows()
+                            } else {
+                                expr.obj
+                            };
                             expr.obj = ExpressionObj::Rendered(quote! {
                                 #obj.key().as_ref()
                             });
 
                             Ok(Transformed::Expression(expr))
-                        }),
+                        }, None),
                     ),
                 )),
                 _ => None,
