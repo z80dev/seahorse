@@ -118,7 +118,7 @@ pub fn cancel_escrow_handler<'info>(
             },
             &[Mutable::new(vec![
                 "escrow".to_string().as_bytes().as_ref(),
-                escrow.escrow_id.to_le_bytes().as_ref(),
+                escrow.borrow().escrow_id.to_le_bytes().as_ref(),
                 bump.to_le_bytes().as_ref(),
             ])
             .borrow()
@@ -231,7 +231,7 @@ pub fn take_escrow_handler<'info>(
             },
             &[Mutable::new(vec![
                 "escrow".to_string().as_bytes().as_ref(),
-                escrow.escrow_id.to_le_bytes().as_ref(),
+                escrow.borrow().escrow_id.to_le_bytes().as_ref(),
                 bump.to_le_bytes().as_ref(),
             ])
             .borrow()

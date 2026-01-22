@@ -331,7 +331,7 @@ pub fn init_handler<'info>(
         Mutable::new(vec![Mutable::new(vec![3, 4]), Mutable::new(vec![5, 6])])
     );
 
-    assign!(init_data.borrow_mut().string, "Hello".to_string());
+    assign!(init_data.borrow_mut().string, "Hello".to_string().clone());
 
     assign!(init_data.borrow_mut().nested, <Loaded!(Nested)>::__new__(7));
 
@@ -379,7 +379,7 @@ pub fn test_stored_mutables_handler<'info>(
 
     assign!(
         data.borrow_mut().string,
-        data.borrow().string.clone() + &" World".to_string()
+        data.borrow().string.clone() + &" World".to_string().clone()
     );
 
     data.borrow().nested.reset();

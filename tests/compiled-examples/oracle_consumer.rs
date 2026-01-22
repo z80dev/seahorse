@@ -294,7 +294,7 @@ pub fn create_price_config_handler<'info>(
 
     assign!(price_config.borrow_mut().config_id, config_id);
 
-    assign!(price_config.borrow_mut().feed_name, feed_name);
+    assign!(price_config.borrow_mut().feed_name, feed_name.clone());
 
     assign!(price_config.borrow_mut().oracle_address, oracle_address);
 

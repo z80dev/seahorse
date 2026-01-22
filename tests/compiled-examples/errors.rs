@@ -226,7 +226,7 @@ pub fn complex_validation_handler<'info>(
 
     assign!(error_demo.borrow_mut().value, new_value);
 
-    assign!(error_demo.borrow_mut().name, new_name);
+    assign!(error_demo.borrow_mut().name, new_name.clone());
 
     assign!(
         error_demo.borrow_mut().operation_count,
@@ -406,7 +406,7 @@ pub fn initialize_handler<'info>(
 
     assign!(error_demo.borrow_mut().is_active, true);
 
-    assign!(error_demo.borrow_mut().name, name);
+    assign!(error_demo.borrow_mut().name, name.clone());
 
     assign!(error_demo.borrow_mut().max_value, max_value);
 
@@ -571,7 +571,7 @@ pub fn update_name_handler<'info>(
 
     solana_program::msg!("{}", format!("Name updated to: {}", new_name));
 
-    assign!(error_demo.borrow_mut().name, new_name);
+    assign!(error_demo.borrow_mut().name, new_name.clone());
 
     assign!(
         error_demo.borrow_mut().operation_count,

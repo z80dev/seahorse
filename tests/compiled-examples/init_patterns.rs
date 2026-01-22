@@ -510,9 +510,9 @@ pub fn init_with_string_handler<'info>(
 
     assign!(data.borrow_mut().owner, owner.key());
 
-    assign!(data.borrow_mut().name, name);
+    assign!(data.borrow_mut().name, name.clone());
 
-    assign!(data.borrow_mut().description, description);
+    assign!(data.borrow_mut().description, description.clone());
 
     assign!(data.borrow_mut().bump, bump);
 }
@@ -712,9 +712,9 @@ pub fn update_string_handler<'info>(
         panic!("Unauthorized");
     }
 
-    assign!(data.borrow_mut().name, name);
+    assign!(data.borrow_mut().name, name.clone());
 
-    assign!(data.borrow_mut().description, description);
+    assign!(data.borrow_mut().description, description.clone());
 }
 
 // ===== lib.rs =====
@@ -734,7 +734,7 @@ use anchor_spl::{
 use dot::program::*;
 use std::{cell::RefCell, rc::Rc};
 
-declare_id!("InitPtrn1111111111111111111111111111111111");
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 pub mod seahorse_util {
     use super::*;

@@ -437,9 +437,9 @@ pub fn create_proposal_handler<'info>(
 
     assign!(proposal.borrow_mut().proposal_id, proposal_id);
 
-    assign!(proposal.borrow_mut().title, title);
+    assign!(proposal.borrow_mut().title, title.clone());
 
-    assign!(proposal.borrow_mut().description, description);
+    assign!(proposal.borrow_mut().description, description.clone());
 
     assign!(proposal.borrow_mut().yes_votes, 0);
 

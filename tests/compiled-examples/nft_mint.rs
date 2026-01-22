@@ -136,11 +136,11 @@ pub fn create_nft_config_handler<'info>(
 
     assign!(nft_config.borrow_mut().mint, authority.key());
 
-    assign!(nft_config.borrow_mut().name, name);
+    assign!(nft_config.borrow_mut().name, name.clone());
 
-    assign!(nft_config.borrow_mut().symbol, symbol);
+    assign!(nft_config.borrow_mut().symbol, symbol.clone());
 
-    assign!(nft_config.borrow_mut().uri, uri);
+    assign!(nft_config.borrow_mut().uri, uri.clone());
 
     assign!(nft_config.borrow_mut().is_minted, false);
 
@@ -221,7 +221,7 @@ pub fn update_nft_config_handler<'info>(
             panic!("Name too long (max 32 characters)");
         }
 
-        assign!(nft_config.borrow_mut().name, name);
+        assign!(nft_config.borrow_mut().name, name.clone());
     }
 
     if (symbol.chars().count() as u64) > 0 {
@@ -229,7 +229,7 @@ pub fn update_nft_config_handler<'info>(
             panic!("Symbol too long (max 10 characters)");
         }
 
-        assign!(nft_config.borrow_mut().symbol, symbol);
+        assign!(nft_config.borrow_mut().symbol, symbol.clone());
     }
 
     if (uri.chars().count() as u64) > 0 {
@@ -237,7 +237,7 @@ pub fn update_nft_config_handler<'info>(
             panic!("URI too long (max 200 characters)");
         }
 
-        assign!(nft_config.borrow_mut().uri, uri);
+        assign!(nft_config.borrow_mut().uri, uri.clone());
     }
 
     solana_program::msg!("{}", "NFT config updated".to_string());

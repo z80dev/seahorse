@@ -205,7 +205,7 @@ pub fn close_data_account_handler<'info>(
 
     assign!(data.borrow_mut().is_closed, true);
 
-    assign!(data.borrow_mut().content, "".to_string());
+    assign!(data.borrow_mut().content, "".to_string().clone());
 
     assign!(data.borrow_mut().content_len, 0);
 
@@ -353,7 +353,7 @@ pub fn grow_account_handler<'info>(
 
     let mut old_size = data.borrow().allocated_size;
 
-    assign!(data.borrow_mut().content, new_content);
+    assign!(data.borrow_mut().content, new_content.clone());
 
     assign!(
         data.borrow_mut().content_len,
@@ -400,7 +400,7 @@ pub fn initialize_data_handler<'info>(
 
     assign!(data.borrow_mut().data_id, data_id);
 
-    assign!(data.borrow_mut().content, initial_content);
+    assign!(data.borrow_mut().content, initial_content.clone());
 
     assign!(
         data.borrow_mut().content_len,
@@ -501,7 +501,7 @@ pub fn shrink_account_handler<'info>(
 
     let mut old_size = data.borrow().allocated_size;
 
-    assign!(data.borrow_mut().content, new_content);
+    assign!(data.borrow_mut().content, new_content.clone());
 
     assign!(
         data.borrow_mut().content_len,

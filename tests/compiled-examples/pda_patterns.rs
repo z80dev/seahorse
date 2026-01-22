@@ -272,11 +272,11 @@ pub fn init_data_record_handler<'info>(
 
     assign!(record.borrow_mut().creator, creator.key());
 
-    assign!(record.borrow_mut().category, category);
+    assign!(record.borrow_mut().category, category.clone());
 
     assign!(record.borrow_mut().record_id, record_id);
 
-    assign!(record.borrow_mut().data, data);
+    assign!(record.borrow_mut().data, data.clone());
 
     assign!(record.borrow_mut().bump, bump);
 }
@@ -305,7 +305,7 @@ pub fn init_user_profile_handler<'info>(
 
     assign!(profile.borrow_mut().owner, user.key());
 
-    assign!(profile.borrow_mut().name, name);
+    assign!(profile.borrow_mut().name, name.clone());
 
     assign!(profile.borrow_mut().visits, 0);
 
@@ -338,7 +338,7 @@ pub fn update_data_record_handler<'info>(
         panic!("Unauthorized");
     }
 
-    assign!(record.borrow_mut().data, data);
+    assign!(record.borrow_mut().data, data.clone());
 }
 
 pub fn update_global_config_handler<'info>(

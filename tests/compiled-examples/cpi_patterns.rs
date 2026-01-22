@@ -162,6 +162,8 @@ pub fn basic_transfer_to_vault_handler<'info>(
     mut mint: SeahorseAccount<'info, '_, Mint>,
     mut amount: u64,
 ) -> () {
+    "\n    Basic CPI - Transfer tokens from user to vault\n    Pattern: User signs the transfer, basic CPI to token program\n\n    This demonstrates the simplest form of CPI where the signer\n    is an instruction account (not a PDA).\n    " . to_string () ;
+
     if !(amount > 0) {
         panic!("Amount must be greater than zero");
     }
@@ -206,6 +208,8 @@ pub fn chained_mint_and_transfer_handler<'info>(
     mut mint_amount: u64,
     mut transfer_amount: u64,
 ) -> () {
+    "\n    Multiple CPIs - Mint tokens and immediately transfer to another account\n    Pattern: Chained CPI operations in sequence\n\n    This demonstrates executing multiple CPIs in a single instruction:\n    1. Mint tokens to an intermediate account (PDA-signed)\n    2. Transfer some tokens to final destination (user-signed)\n    " . to_string () ;
+
     if !(authority.key() == mint_config.borrow().authority) {
         panic!("Unauthorized");
     }
@@ -273,6 +277,8 @@ pub fn chained_mint_and_transfer_handler<'info>(
 }
 
 pub fn get_vault_info_handler<'info>(mut vault: Mutable<LoadedCpiVault<'info, '_>>) -> () {
+    "\n    Read-only operation to display vault state\n    Demonstrates accessing CPI-affected state\n    " . to_string () ;
+
     solana_program::msg!(
         "{} {:?}",
         "Vault authority: ".to_string(),
@@ -311,6 +317,8 @@ pub fn initialize_mint_config_handler<'info>(
     mut mint_config: Empty<Mutable<LoadedMintConfig<'info, '_>>>,
     mut mint: SeahorseAccount<'info, '_, Mint>,
 ) -> () {
+    "\n    Initialize mint config - Create a mint authority PDA\n    The mint_config PDA will be set as the mint authority\n    " . to_string () ;
+
     let mut bump = mint_config.bump.unwrap();
     let mut mint_config = mint_config.account.clone();
 
@@ -337,6 +345,8 @@ pub fn initialize_vault_handler<'info>(
     mut vault_token_account: Empty<SeahorseAccount<'info, '_, TokenAccount>>,
     mut mint: SeahorseAccount<'info, '_, Mint>,
 ) -> () {
+    "\n    Initialize a CPI vault that can hold tokens and perform CPI operations\n    Pattern: Account initialization with PDA\n    " . to_string () ;
+
     let mut bump = vault.bump.unwrap();
     let mut vault = vault.account.clone();
 
@@ -369,6 +379,8 @@ pub fn pda_signed_transfer_from_vault_handler<'info>(
     mut mint: SeahorseAccount<'info, '_, Mint>,
     mut amount: u64,
 ) -> () {
+    "\n    CPI with PDA signer - Transfer tokens from vault back to user\n    Pattern: PDA signs the transfer using signer seeds\n\n    This demonstrates how to use PDA signer seeds for CPI calls\n    where the authority is a PDA, not a regular signer.\n    " . to_string () ;
+
     if !(authority.key() == vault.borrow().authority) {
         panic!("Unauthorized: caller is not the authority");
     }
@@ -428,6 +440,8 @@ pub fn validated_burn_handler<'info>(
     mut mint: SeahorseAccount<'info, '_, Mint>,
     mut amount: u64,
 ) -> () {
+    "\n    Error handling across CPI - Demonstrate pre-validation patterns\n    Pattern: Validate conditions before CPI to provide better error messages\n\n    This demonstrates proper error handling for CPI calls:\n    - Pre-validation gives clearer error messages\n    - Prevents wasting compute units on failed CPIs\n    " . to_string () ;
+
     if !(amount > 0) {
         panic!("Amount must be greater than zero");
     }
@@ -1042,3 +1056,4 @@ mod cpi_patterns {
         return Ok(());
     }
 }
+
