@@ -3,3 +3,13 @@
 tests/unit/target
 tests/integration/target
 tests/ts/node_modules
+tests/common/target
+
+# Anchor reference build artifacts
+tests/anchor-reference/*/Cargo.lock
+tests/anchor-reference/*/target/
+
+# Working directories
+.claude/
+archive/
+scripts/ralph/
