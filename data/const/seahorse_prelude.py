@@ -856,6 +856,38 @@ class AccountWithKey:
     def key(self) -> Pubkey:
         """Get this account's key."""
 
+    def readonly(self) -> 'AccountWithKey':
+        """
+        Mark this account as readonly (no mut constraint).
+
+        By default, Seahorse marks all accounts as mutable. Use this method
+        to explicitly mark an account as readonly, which removes the `mut`
+        constraint in the generated Anchor code.
+
+        This is important for:
+        - Allowing duplicate accounts (readonly duplicates don't need `dup`)
+        - Signers that don't need to be writable (e.g., authority accounts)
+        - Config/state accounts that are only read, not modified
+
+        Example:
+            @instruction
+            def process(
+                authority: Signer,
+                config: Config,
+            ):
+                authority.readonly()  # Signer doesn't need to be writable
+                config.readonly()     # Just reading config
+
+        This generates:
+            #[derive(Accounts)]
+            pub struct Process<'info> {
+                pub authority: Signer<'info>,  // No mut!
+                pub config: Account<'info, Config>,  // No mut!
+            }
+
+        @returns: Self for method chaining.
+        """
+
     def executable(self) -> 'AccountWithKey':
         """
         Mark this account as executable (i.e., it must be a program).
@@ -1141,11 +1173,44 @@ class TokenAccount(AccountWithKey):
     def transfer(self, authority: AccountWithKey, to: 'TokenAccount', amount: u64, signer: List[Any] = None):
         """
         Transfer funds from this SPL token account to another.
-        
+
         @param authority: The account that owns this TokenAccount. Must be an instruction signer or the account given by the `signer` param.
         @param to: The recipient TokenAccount.
         @param amount: How much (in *native* token units) to transfer.
         @param signer: (Optional) seeds for the signature of a PDA.
+        """
+
+    def token_mint(self, mint: 'TokenMint') -> 'TokenAccount':
+        """
+        Add a token::mint check constraint to verify this token account's mint.
+
+        This adds the Anchor #[account(token::mint = <mint>)] constraint which verifies
+        at runtime that the token account's mint matches the expected mint account.
+
+        @param mint: The expected TokenMint for this token account.
+        @returns: Self for method chaining.
+        """
+
+    def token_authority(self, authority: Pubkey) -> 'TokenAccount':
+        """
+        Add a token::authority check constraint to verify this token account's authority.
+
+        This adds the Anchor #[account(token::authority = <authority>)] constraint which verifies
+        at runtime that the token account's owner matches the expected pubkey.
+
+        @param authority: The expected authority (owner) pubkey for this token account.
+        @returns: Self for method chaining.
+        """
+
+    def token_program(self, program: 'Program') -> 'TokenAccount':
+        """
+        Add a token::token_program check constraint to verify the token program.
+
+        This adds the Anchor #[account(token::token_program = <program>)] constraint which verifies
+        at runtime that the token account uses the expected token program (e.g., SPL Token or Token-2022).
+
+        @param program: The expected token program.
+        @returns: Self for method chaining.
         """
 
 class TokenMint(AccountWithKey):
@@ -1181,6 +1246,50 @@ class TokenMint(AccountWithKey):
         @param holder: The TokenAccount to burn from.
         @param amount: How much (in *native* token units) to burn.
         @param signer: (Optional) seeds for the signature of a PDA.
+        """
+
+    def mint_decimals(self, decimals: u8) -> 'TokenMint':
+        """
+        Add a mint::decimals check constraint to verify this mint's decimals.
+
+        This adds the Anchor #[account(mint::decimals = <decimals>)] constraint which verifies
+        at runtime that the mint's decimals match the expected value.
+
+        @param decimals: The expected number of decimals for this mint.
+        @returns: Self for method chaining.
+        """
+
+    def mint_authority(self, authority: Pubkey) -> 'TokenMint':
+        """
+        Add a mint::authority check constraint to verify this mint's authority.
+
+        This adds the Anchor #[account(mint::authority = <authority>)] constraint which verifies
+        at runtime that the mint's mint_authority matches the expected pubkey.
+
+        @param authority: The expected mint authority pubkey.
+        @returns: Self for method chaining.
+        """
+
+    def mint_freeze_authority(self, authority: Pubkey) -> 'TokenMint':
+        """
+        Add a mint::freeze_authority check constraint to verify this mint's freeze authority.
+
+        This adds the Anchor #[account(mint::freeze_authority = <authority>)] constraint which verifies
+        at runtime that the mint's freeze_authority matches the expected pubkey.
+
+        @param authority: The expected freeze authority pubkey.
+        @returns: Self for method chaining.
+        """
+
+    def mint_token_program(self, program: 'Program') -> 'TokenMint':
+        """
+        Add a mint::token_program check constraint to verify the token program.
+
+        This adds the Anchor #[account(mint::token_program = <program>)] constraint which verifies
+        at runtime that the mint uses the expected token program (e.g., SPL Token or Token-2022).
+
+        @param program: The expected token program.
+        @returns: Self for method chaining.
         """
 
 

@@ -194,6 +194,8 @@ pub enum RentExemptMode {
 #[derive(Clone, Debug)]
 pub struct AccountAnnotation {
     pub is_mut: bool,
+    /// Explicitly marked as readonly (overrides is_mut)
+    pub readonly: bool,
     pub is_associated: bool,
     pub init: bool,
     pub init_if_needed: bool,
@@ -205,8 +207,14 @@ pub struct AccountAnnotation {
     pub seeds: Option<Vec<TypedExpression>>,
     pub mint_decimals: Option<TypedExpression>,
     pub mint_authority: Option<TypedExpression>,
+    /// mint::freeze_authority constraint - verifies mint's freeze authority
+    pub mint_freeze_authority: Option<TypedExpression>,
+    /// mint::token_program constraint - verifies mint's token program
+    pub mint_token_program: Option<TypedExpression>,
     pub token_mint: Option<TypedExpression>,
     pub token_authority: Option<TypedExpression>,
+    /// token::token_program constraint - verifies token account's token program
+    pub token_token_program: Option<TypedExpression>,
     pub space: Option<TypedExpression>,
     pub padding: Option<TypedExpression>,
     /// The account to receive lamports when this account is closed
@@ -243,6 +251,7 @@ impl AccountAnnotation {
     pub fn new() -> Self {
         Self {
             is_mut: true,
+            readonly: false,
             is_associated: false,
             init: false,
             init_if_needed: false,
@@ -253,8 +262,11 @@ impl AccountAnnotation {
             seeds: None,
             mint_decimals: None,
             mint_authority: None,
+            mint_freeze_authority: None,
+            mint_token_program: None,
             token_mint: None,
             token_authority: None,
+            token_token_program: None,
             space: None,
             padding: None,
             close: None,

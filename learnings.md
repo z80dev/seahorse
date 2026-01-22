@@ -1152,3 +1152,302 @@ foreign_account.seeds([b"data"]).bump(stored_bump).seeds_program(other_program.k
 - `Empty[T].bump()` (existing): **Gets** the bump value after account initialization
 - These are complementary: you might use `Empty[T].init()` with seeds, then later read that account with `.seeds().bump(stored_bump)`
 
+---
+
+## SPL Check Constraints Implementation (2026-01-22)
+
+### Overview
+Implemented SPL token constraint checks for existing (non-init) accounts. Previously, SPL constraints like `token::mint`, `token::authority` were only used during account initialization. Now they can be used as verification constraints on existing TokenAccount and TokenMint accounts.
+
+### Anchor Reference
+
+**Token Account Constraints (as CHECKS, not init):**
+```rust
+#[account(
+    token::mint = expected_mint,
+    token::authority = expected_authority,
+    token::token_program = token_program
+)]
+pub token_account: Account<'info, TokenAccount>,
+```
+
+**Mint Account Constraints (as CHECKS, not init):**
+```rust
+#[account(
+    mint::decimals = 9,
+    mint::authority = mint_authority,
+    mint::freeze_authority = freeze_authority,
+    mint::token_program = token_program
+)]
+pub mint: Account<'info, Mint>,
+```
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `mint_freeze_authority: Option<TypedExpression>` field to `AccountAnnotation`
+   - Added `mint_token_program: Option<TypedExpression>` field
+   - Added `token_token_program: Option<TypedExpression>` field
+   - Updated `AccountAnnotation::new()` to initialize new fields to `None`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added new `Transformed` enum variants:
+     - `AccountTokenMint { expr, name, mint }` - for token::mint check
+     - `AccountTokenAuthority { expr, name, authority }` - for token::authority check
+     - `AccountTokenProgram { expr, name, program }` - for token::token_program check
+     - `AccountMintDecimals { expr, name, decimals }` - for mint::decimals check
+     - `AccountMintAuthority { expr, name, authority }` - for mint::authority check
+     - `AccountMintFreezeAuthority { expr, name, authority }` - for mint::freeze_authority check
+     - `AccountMintTokenProgram { expr, name, program }` - for mint::token_program check
+   - Added match arm handling for each variant in `transform()` method
+   - Each handler finds the account, initializes annotation if needed, and sets the corresponding field
+
+3. **`src/core/compile/builtin/prelude.rs`**
+   - Added `TokenAccount` methods:
+     - `token_mint(mint: TokenMint)` -> `#[account(token::mint = mint)]`
+     - `token_authority(authority: Pubkey)` -> `#[account(token::authority = authority)]`
+     - `token_program(program: Program)` -> `#[account(token::token_program = program)]`
+   - Added `TokenMint` methods:
+     - `mint_decimals(decimals: u8)` -> `#[account(mint::decimals = decimals)]`
+     - `mint_authority(authority: Pubkey)` -> `#[account(mint::authority = authority)]`
+     - `mint_freeze_authority(authority: Pubkey)` -> `#[account(mint::freeze_authority = authority)]`
+     - `mint_token_program(program: Program)` -> `#[account(mint::token_program = program)]`
+   - All methods use `ExprContext::AccountAttr` for proper constraint expression handling
+
+4. **`src/core/generate/mod.rs`**
+   - Updated `AccountAnnotationWithTyExpr::to_tokens()` destructuring to include new fields
+   - Added codegen for new constraints:
+     ```rust
+     // token::token_program constraint
+     params.push(
+         token_token_program
+             .as_ref()
+             .map(|program| quote! { token::token_program = #program }),
+     );
+     // mint::freeze_authority constraint
+     params.push(
+         mint_freeze_authority
+             .as_ref()
+             .map(|authority| quote! { mint::freeze_authority = #authority }),
+     );
+     // mint::token_program constraint
+     params.push(
+         mint_token_program
+             .as_ref()
+             .map(|program| quote! { mint::token_program = #program }),
+     );
+     ```
+
+5. **`data/const/seahorse_prelude.py`**
+   - Added `TokenAccount` methods:
+     - `token_mint(self, mint: TokenMint) -> 'TokenAccount'`
+     - `token_authority(self, authority: Pubkey) -> 'TokenAccount'`
+     - `token_program(self, program: Program) -> 'TokenAccount'`
+   - Added `TokenMint` methods:
+     - `mint_decimals(self, decimals: u8) -> 'TokenMint'`
+     - `mint_authority(self, authority: Pubkey) -> 'TokenMint'`
+     - `mint_freeze_authority(self, authority: Pubkey) -> 'TokenMint'`
+     - `mint_token_program(self, program: Program) -> 'TokenMint'`
+   - All methods include comprehensive docstrings
+
+### Usage in Seahorse
+
+```python
+@instruction
+def verify_token_account(
+    token_account: TokenAccount,
+    expected_mint: TokenMint,
+    expected_authority: Signer,
+    token_program: Program,
+):
+    # Verify the token account's mint and authority
+    token_account.token_mint(expected_mint)
+    token_account.token_authority(expected_authority.key())
+    token_account.token_program(token_program)
+
+@instruction
+def verify_mint(
+    mint: TokenMint,
+    expected_authority: Signer,
+    token_program: Program,
+):
+    # Verify the mint's decimals and authorities
+    mint.mint_decimals(u8(9))
+    mint.mint_authority(expected_authority.key())
+    mint.mint_token_program(token_program)
+```
+
+### Generated Anchor Code
+
+```rust
+#[derive(Accounts)]
+pub struct VerifyTokenAccount<'info> {
+    #[account(
+        mut,
+        token::mint = expected_mint,
+        token::authority = expected_authority,
+        token::token_program = token_program
+    )]
+    pub token_account: Account<'info, TokenAccount>,
+    pub expected_mint: Account<'info, Mint>,
+    pub expected_authority: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct VerifyMint<'info> {
+    #[account(
+        mut,
+        mint::decimals = 9,
+        mint::authority = expected_authority,
+        mint::token_program = token_program
+    )]
+    pub mint: Account<'info, Mint>,
+    pub expected_authority: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+}
+```
+
+### Method Chaining Examples
+
+```python
+# Chain multiple token account constraints
+token_account.token_mint(expected_mint).token_authority(signer.key())
+
+# Chain mint constraints with seeds
+mint.seeds([b"mint", user.key()]).mint_authority(mint_authority.key()).mint_decimals(u8(6))
+
+# Verify associated token account
+ata.token_mint(mint).token_authority(owner.key()).token_program(token_program)
+```
+
+### Pattern Notes
+- All constraint methods return the account for method chaining
+- All constraint expressions use `ExprContext::AccountAttr` for raw account field access
+- These are CHECK constraints (not init constraints) - they verify existing accounts
+- The existing `token_mint` and `token_authority` annotation fields are reused (shared between init and check contexts)
+- New fields were added for constraints that didn't exist before: `token_token_program`, `mint_freeze_authority`, `mint_token_program`
+- Common use cases:
+  - Verifying token accounts belong to the expected mint
+  - Verifying authority permissions
+  - Ensuring correct token program (SPL Token vs Token-2022)
+
+### Important: Distinction from Init Constraints
+- Init constraints (via `Empty[TokenAccount].init(payer, mint=..., authority=...)`) create new accounts
+- Check constraints (via `token_account.token_mint(...)`) verify existing accounts
+- Both emit the same Anchor constraint syntax, but the semantics differ based on whether `init` is also present
+
+---
+
+## Readonly Constraint Implementation (2026-01-22)
+
+### Overview
+Implemented the `readonly()` method for Anchor parity. This addresses the "all accounts are mut" problem in Seahorse where nearly every account gets `#[account(mut)]`, which breaks common Anchor patterns where duplicate accounts are allowed (readonly duplicates don't need `dup`).
+
+### The Problem
+By default in Seahorse:
+- All account types have `is_mut() == true`
+- This causes nearly every account to get `#[account(mut)]`
+- This breaks patterns where duplicate accounts are allowed (readonly duplicates are fine, mutable duplicates need `dup`)
+
+### Anchor Behavior
+- If an account is NOT marked `mut`, duplicates are allowed
+- If an account IS marked `mut`, duplicates require `dup` constraint
+- Many accounts don't need to be writable (authority signers, program accounts, etc.)
+
+### Solution: readonly() method
+The `.readonly()` method marks an account as explicitly NOT mutable, overriding the default `is_mut = true` behavior.
+
+### Files Modified
+
+1. **`src/core/compile/ast.rs`**
+   - Added `readonly: bool` field to `AccountAnnotation` struct
+   - Updated `AccountAnnotation::new()` to initialize `readonly: false`
+
+2. **`src/core/compile/build/mod.rs`**
+   - Added `AccountReadonly { expr, name }` variant to `Transformed` enum
+   - Added `MisplacedReadonly` variant to `Error` enum with message: "account.readonly() can only be used inside an @instruction"
+   - Added match arm handling for `Transformed::AccountReadonly` in `transform()` method
+     - Finds the account by name in `ix_context.accounts`
+     - Initializes annotation if needed
+     - Sets `annotation.readonly = true`
+
+3. **`src/core/compile/check/mod.rs`**
+   - Added `"readonly"` method on defined account types (after `"seeds"` method)
+   - Takes no arguments
+   - Returns `Ty::Transformed(Ty::Anonymous(0), ...)` for method chaining
+   - Produces `Transformed::AccountReadonly { expr, name }`
+
+4. **`src/core/compile/builtin/prelude.rs`**
+   - Added `readonly` method for:
+     - `Signer` type (after `transfer_lamports`)
+     - `TokenMint` type (after `mint_token_program`)
+     - `TokenAccount` type (after `token_program`)
+     - `UncheckedAccount` type (after `bump`)
+   - All methods follow the same pattern: take no arguments, return the account for chaining
+
+5. **`src/core/generate/mod.rs`**
+   - Updated codegen to check for `readonly` flag:
+     ```rust
+     // Only emit mut if is_mut is true AND readonly is false
+     if *is_mut && !*readonly {
+         params.push(Some(quote! { mut }));
+     }
+     ```
+   - (Note: This code was already in place)
+
+6. **`data/const/seahorse_prelude.py`**
+   - Added `readonly(self) -> 'AccountWithKey'` method to `AccountWithKey` class
+   - Includes comprehensive docstring explaining the use case
+
+### Usage in Seahorse
+```python
+@instruction
+def process(
+    authority: Signer,
+    config: Config,
+):
+    authority.readonly()  # Signer doesn't need to be writable
+    config.readonly()     # Just reading config
+```
+
+### Generated Anchor Code
+```rust
+#[derive(Accounts)]
+pub struct Process<'info> {
+    pub authority: Signer<'info>,  // No mut!
+    pub config: Account<'info, Config>,  // No mut!
+}
+```
+
+### Method Chaining Examples
+```python
+# Chain with other constraints
+config.readonly().seeds([b"config"])
+
+# Signer that doesn't need to be mutable
+authority.readonly()
+
+# Token account that's only read
+token_account.readonly().token_mint(expected_mint)
+```
+
+### Pattern Notes
+- This is a simple flag constraint (no expression needed)
+- Returns the account for method chaining
+- Follows the same pattern as `executable`, `signer`, `zero`, and `dup` constraints
+- The method call becomes a no-op in the generated handler code; the actual effect is removing the `mut` constraint
+- **Key benefit**: Allows duplicate accounts without requiring `dup` constraint
+
+### When to Use readonly()
+- **Signers that don't modify state**: Authority accounts that only authorize but don't receive/send lamports
+- **Config/state accounts**: Accounts that are only read, not modified
+- **Program accounts**: When passing a program to verify its key
+- **Duplicate account scenarios**: When the same account might be passed twice
+
+### Important: This is Different from dup()
+- `readonly()`: Removes `mut` constraint entirely - account is not writable
+- `dup()`: Keeps `mut` constraint but allows duplicate mutable accounts
+- If an account is `readonly()`, duplicates are automatically allowed by Anchor
+- If an account is mutable, duplicates require `dup()` constraint
+

@@ -1224,6 +1224,30 @@ impl<'a> Context<'a> {
                                 )
                             )
                         )),
+                        // account.readonly() -> Account (marks account as not mutable)
+                        "readonly" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![],  // no arguments
+                                Ty::Transformed(
+                                    Ty::Anonymous(0).into(),  // returns the account for chaining
+                                    Transformation::new(|mut expr| {
+                                        let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        // The account.readonly() call returns the account for chaining
+                                        // The actual constraint removes the mut attribute
+                                        expr.obj = account.obj;
+
+                                        Ok(Transformed::AccountReadonly {
+                                            expr,
+                                            name,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
                         _ => self.defined_attr(&path, attr)
                     }
                 })

@@ -885,6 +885,7 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
         let AccountAnnotationWithTyExpr(
             AccountAnnotation {
                 is_mut,
+                readonly,
                 is_associated,
                 init,
                 init_if_needed,
@@ -892,8 +893,11 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 seeds,
                 token_mint,
                 token_authority,
+                token_token_program,
                 mint_decimals,
                 mint_authority,
+                mint_freeze_authority,
+                mint_token_program,
                 space,
                 padding,
                 realloc,
@@ -918,7 +922,8 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
         // Build a filter-map of all the possible account attributes that Seahorse supports
         let mut params = vec![];
 
-        if *is_mut {
+        // Only emit mut if is_mut is true AND readonly is false
+        if *is_mut && !*readonly {
             params.push(Some(quote! { mut }));
         }
         if *init || *init_if_needed {
@@ -990,6 +995,24 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 quote! { associated_token::authority = #authority }
             }
         }));
+        // Add token::token_program constraint if set (for verifying token account's token program)
+        params.push(
+            token_token_program
+                .as_ref()
+                .map(|program| quote! { token::token_program = #program }),
+        );
+        // Add mint::freeze_authority constraint if set (for verifying mint's freeze authority)
+        params.push(
+            mint_freeze_authority
+                .as_ref()
+                .map(|authority| quote! { mint::freeze_authority = #authority }),
+        );
+        // Add mint::token_program constraint if set (for verifying mint's token program)
+        params.push(
+            mint_token_program
+                .as_ref()
+                .map(|program| quote! { mint::token_program = #program }),
+        );
         params.push(
             close
                 .as_ref()

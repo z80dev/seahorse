@@ -401,6 +401,30 @@ impl BuiltinSource for Prelude {
                     ),
                 ),
             )),
+            // Signer.readonly() -> Signer (marks account as not mutable)
+            (Self::Signer, "readonly") => Some((
+                Ty::prelude(Self::Signer, vec![]),
+                Ty::new_function(
+                    vec![],  // no arguments
+                    Ty::Transformed(
+                        Ty::prelude(Self::Signer, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            // The account.readonly() call returns the account for chaining
+                            // The actual constraint removes the mut attribute
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountReadonly {
+                                expr,
+                                name,
+                            })
+                        })
+                    )
+                )
+            )),
             // Empty[T].init(...) -> T
             (Self::Empty, "init") => Some((
                 Ty::prelude(Self::Empty, vec![Ty::Anonymous(0)]),
@@ -1251,6 +1275,146 @@ impl BuiltinSource for Prelude {
                     )
                 )
             )),
+            // TokenMint.mint_decimals(decimals) -> TokenMint (adds mint::decimals check constraint)
+            (Self::TokenMint, "mint_decimals") => Some((
+                Ty::prelude(Self::TokenMint, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("decimals", Ty::prelude(Self::RustInt(false, 8), vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenMint, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let decimals_expr = args.next().unwrap();
+
+                            // The account.mint_decimals() call returns the account for chaining
+                            // The actual constraint is via #[account(mint::decimals = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountMintDecimals {
+                                expr,
+                                name,
+                                decimals: decimals_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the decimals expression
+                    )
+                )
+            )),
+            // TokenMint.mint_authority(authority) -> TokenMint (adds mint::authority check constraint)
+            (Self::TokenMint, "mint_authority") => Some((
+                Ty::prelude(Self::TokenMint, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("authority", Ty::prelude(Self::Pubkey, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenMint, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let authority_expr = args.next().unwrap();
+
+                            // The account.mint_authority() call returns the account for chaining
+                            // The actual constraint is via #[account(mint::authority = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountMintAuthority {
+                                expr,
+                                name,
+                                authority: authority_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the authority expression
+                    )
+                )
+            )),
+            // TokenMint.mint_freeze_authority(authority) -> TokenMint (adds mint::freeze_authority check constraint)
+            (Self::TokenMint, "mint_freeze_authority") => Some((
+                Ty::prelude(Self::TokenMint, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("authority", Ty::prelude(Self::Pubkey, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenMint, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let authority_expr = args.next().unwrap();
+
+                            // The account.mint_freeze_authority() call returns the account for chaining
+                            // The actual constraint is via #[account(mint::freeze_authority = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountMintFreezeAuthority {
+                                expr,
+                                name,
+                                authority: authority_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the authority expression
+                    )
+                )
+            )),
+            // TokenMint.mint_token_program(program) -> TokenMint (adds mint::token_program check constraint)
+            (Self::TokenMint, "mint_token_program") => Some((
+                Ty::prelude(Self::TokenMint, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("program", Ty::prelude(Self::Program, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenMint, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let program_expr = args.next().unwrap();
+
+                            // The account.mint_token_program() call returns the account for chaining
+                            // The actual constraint is via #[account(mint::token_program = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountMintTokenProgram {
+                                expr,
+                                name,
+                                program: program_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the program expression
+                    )
+                )
+            )),
+            // TokenMint.readonly() -> TokenMint (marks account as not mutable)
+            (Self::TokenMint, "readonly") => Some((
+                Ty::prelude(Self::TokenMint, vec![]),
+                Ty::new_function(
+                    vec![],  // no arguments
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenMint, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            // The account.readonly() call returns the account for chaining
+                            // The actual constraint removes the mut attribute
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountReadonly {
+                                expr,
+                                name,
+                            })
+                        })
+                    )
+                )
+            )),
             // TokenAccount.transfer(authority = Cast(Account), to = TokenAccount, amount = u64, signer = List[Cast(Seed)]?) -> None
             (Self::TokenAccount, "transfer") => Some((
                 Ty::prelude(Self::TokenAccount, vec![]),
@@ -1577,6 +1741,117 @@ impl BuiltinSource for Prelude {
                     )
                 )
             )),
+            // TokenAccount.token_mint(mint) -> TokenAccount (adds token::mint check constraint)
+            (Self::TokenAccount, "token_mint") => Some((
+                Ty::prelude(Self::TokenAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("mint", Ty::prelude(Self::TokenMint, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let mint_expr = args.next().unwrap();
+
+                            // The account.token_mint() call returns the account for chaining
+                            // The actual constraint is via #[account(token::mint = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountTokenMint {
+                                expr,
+                                name,
+                                mint: mint_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the mint expression
+                    )
+                )
+            )),
+            // TokenAccount.token_authority(authority) -> TokenAccount (adds token::authority check constraint)
+            (Self::TokenAccount, "token_authority") => Some((
+                Ty::prelude(Self::TokenAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("authority", Ty::prelude(Self::Pubkey, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let authority_expr = args.next().unwrap();
+
+                            // The account.token_authority() call returns the account for chaining
+                            // The actual constraint is via #[account(token::authority = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountTokenAuthority {
+                                expr,
+                                name,
+                                authority: authority_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the authority expression
+                    )
+                )
+            )),
+            // TokenAccount.token_program(program) -> TokenAccount (adds token::token_program check constraint)
+            (Self::TokenAccount, "token_program") => Some((
+                Ty::prelude(Self::TokenAccount, vec![]),
+                Ty::new_function(
+                    vec![
+                        ("program", Ty::prelude(Self::Program, vec![]), ParamType::Required),
+                    ],
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new_with_context(|mut expr, _context_stack| {
+                            let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            let program_expr = args.next().unwrap();
+
+                            // The account.token_program() call returns the account for chaining
+                            // The actual constraint is via #[account(token::token_program = ...)]
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountTokenProgram {
+                                expr,
+                                name,
+                                program: program_expr,
+                            })
+                        }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for the program expression
+                    )
+                )
+            )),
+            // TokenAccount.readonly() -> TokenAccount (marks account as not mutable)
+            (Self::TokenAccount, "readonly") => Some((
+                Ty::prelude(Self::TokenAccount, vec![]),
+                Ty::new_function(
+                    vec![],  // no arguments
+                    Ty::Transformed(
+                        Ty::prelude(Self::TokenAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            // The account.readonly() call returns the account for chaining
+                            // The actual constraint removes the mut attribute
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountReadonly {
+                                expr,
+                                name,
+                            })
+                        })
+                    )
+                )
+            )),
             // UncheckedAccount.key() -> Pubkey
             (Self::UncheckedAccount, "key") => Some((
                 Ty::prelude(Self::UncheckedAccount, vec![]),
@@ -1838,6 +2113,30 @@ impl BuiltinSource for Prelude {
                                 bump: bump_value,
                             })
                         }, Some(ExprContext::AccountAttr))  // Use AccountAttr context for bump expression
+                    )
+                )
+            )),
+            // UncheckedAccount.readonly() -> UncheckedAccount (marks account as not mutable)
+            (Self::UncheckedAccount, "readonly") => Some((
+                Ty::prelude(Self::UncheckedAccount, vec![]),
+                Ty::new_function(
+                    vec![],  // no arguments
+                    Ty::Transformed(
+                        Ty::prelude(Self::UncheckedAccount, vec![]).into(),  // returns the account for chaining
+                        Transformation::new(|mut expr| {
+                            let function = match1!(expr.obj, ExpressionObj::Call { function, .. } => function);
+                            let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                            let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                            // The account.readonly() call returns the account for chaining
+                            // The actual constraint removes the mut attribute
+                            expr.obj = account.obj;
+
+                            Ok(Transformed::AccountReadonly {
+                                expr,
+                                name,
+                            })
+                        })
                     )
                 )
             )),

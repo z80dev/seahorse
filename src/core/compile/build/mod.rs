@@ -35,6 +35,7 @@ enum Error {
     MisplacedSeedsProgram,
     MisplacedSeeds,
     MisplacedBump,
+    MisplacedReadonly,
     TopLevelNonDirective,
     MisplacedDirective,
     MisplacedCpi,
@@ -90,6 +91,9 @@ impl Error {
             }
             Self::MisplacedBump => {
                 CoreError::make_raw("account.bump() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedReadonly => {
+                CoreError::make_raw("account.readonly() can only be used inside an @instruction", "")
             }
             Self::TopLevelNonDirective => {
                 CoreError::make_raw("arbitrary expression may not be at the top level of a module", "Hint: the only expressions that can be at the top level of a module are directives, like declare_id.")
@@ -305,6 +309,53 @@ pub enum Transformed {
         expr: TypedExpression,
         name: String,
         bump: TypedExpression,
+    },
+    /// Sets token::mint check constraint to verify token account's mint
+    AccountTokenMint {
+        expr: TypedExpression,
+        name: String,
+        mint: TypedExpression,
+    },
+    /// Sets token::authority check constraint to verify token account's authority
+    AccountTokenAuthority {
+        expr: TypedExpression,
+        name: String,
+        authority: TypedExpression,
+    },
+    /// Sets token::token_program check constraint to verify token account's token program
+    AccountTokenProgram {
+        expr: TypedExpression,
+        name: String,
+        program: TypedExpression,
+    },
+    /// Sets mint::decimals check constraint to verify mint's decimals
+    AccountMintDecimals {
+        expr: TypedExpression,
+        name: String,
+        decimals: TypedExpression,
+    },
+    /// Sets mint::authority check constraint to verify mint's authority
+    AccountMintAuthority {
+        expr: TypedExpression,
+        name: String,
+        authority: TypedExpression,
+    },
+    /// Sets mint::freeze_authority check constraint to verify mint's freeze authority
+    AccountMintFreezeAuthority {
+        expr: TypedExpression,
+        name: String,
+        authority: TypedExpression,
+    },
+    /// Sets mint::token_program check constraint to verify mint's token program
+    AccountMintTokenProgram {
+        expr: TypedExpression,
+        name: String,
+        program: TypedExpression,
+    },
+    /// Marks an account as explicitly readonly (no mut constraint)
+    AccountReadonly {
+        expr: TypedExpression,
+        name: String,
     },
     Directive(Directive),
 }
@@ -1539,6 +1590,214 @@ impl Context {
                         Ok(expression)
                     } else {
                         Err(Error::MisplacedBump.core(loc))
+                    }
+                }
+                Transformed::AccountTokenMint {
+                    expr: expression,
+                    name,
+                    mint,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.token_mint = Some(mint);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedConstraint.core(loc))
+                    }
+                }
+                Transformed::AccountTokenAuthority {
+                    expr: expression,
+                    name,
+                    authority,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.token_authority = Some(authority);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedConstraint.core(loc))
+                    }
+                }
+                Transformed::AccountTokenProgram {
+                    expr: expression,
+                    name,
+                    program,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.token_token_program = Some(program);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedConstraint.core(loc))
+                    }
+                }
+                Transformed::AccountMintDecimals {
+                    expr: expression,
+                    name,
+                    decimals,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.mint_decimals = Some(decimals);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedConstraint.core(loc))
+                    }
+                }
+                Transformed::AccountMintAuthority {
+                    expr: expression,
+                    name,
+                    authority,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.mint_authority = Some(authority);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedConstraint.core(loc))
+                    }
+                }
+                Transformed::AccountMintFreezeAuthority {
+                    expr: expression,
+                    name,
+                    authority,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.mint_freeze_authority = Some(authority);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedConstraint.core(loc))
+                    }
+                }
+                Transformed::AccountMintTokenProgram {
+                    expr: expression,
+                    name,
+                    program,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.mint_token_program = Some(program);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedConstraint.core(loc))
+                    }
+                }
+                Transformed::AccountReadonly {
+                    expr: expression,
+                    name,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set readonly
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.readonly = true;
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedReadonly.core(loc))
                     }
                 }
                 Transformed::Directive(directive) => {
