@@ -228,6 +228,15 @@ impl Ty {
         }
     }
 
+    /// Returns whether this type is a String (Python `str`).
+    /// Strings need special handling in assignments to avoid ownership issues.
+    pub fn is_string(&self) -> bool {
+        matches!(
+            self,
+            Ty::Generic(TyName::Builtin(Builtin::Python(Python::Str)), _)
+        )
+    }
+
     /// Returns whether this type is Rust-`Display`.
     pub fn is_display(&self) -> bool {
         match self {
@@ -859,6 +868,119 @@ impl<'a> Context<'a> {
                                         });
 
                                         Ok(Transformed::Expression(expr))
+                                    })
+                                )
+                            )
+                        )),
+                        "close" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![
+                                    ("recipient", Ty::Cast(Ty::prelude(Prelude::Account, vec![]).into()), ParamType::Required),
+                                ],
+                                Ty::Transformed(
+                                    Ty::python(Python::Tuple, vec![]).into(),
+                                    Transformation::new(|mut expr| {
+                                        let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        let recipient_expr = args.next().unwrap();
+                                        // Extract just the identifier name from the recipient
+                                        // Handle Move wrapper that may be present
+                                        let recipient = match &recipient_expr.obj {
+                                            ExpressionObj::Id(var) => var.clone(),
+                                            ExpressionObj::Move(inner) => {
+                                                match1!(&inner.obj, ExpressionObj::Id(var) => var.clone())
+                                            }
+                                            _ => panic!("close recipient must be an identifier"),
+                                        };
+
+                                        // The account.close() call becomes a no-op in the generated code
+                                        // The actual close happens via the #[account(close = recipient)] constraint
+                                        expr.obj = ExpressionObj::Rendered(quote! { () });
+
+                                        Ok(Transformed::AccountClose {
+                                            expr,
+                                            name,
+                                            recipient,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
+                        "has_one" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![
+                                    ("target", Ty::Cast(Ty::prelude(Prelude::Account, vec![]).into()), ParamType::Required),
+                                ],
+                                Ty::Transformed(
+                                    Ty::python(Python::Tuple, vec![]).into(),
+                                    Transformation::new(|mut expr| {
+                                        let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        let target_expr = args.next().unwrap();
+                                        // Extract just the identifier name from the target
+                                        // Handle Move wrapper that may be present
+                                        let target = match &target_expr.obj {
+                                            ExpressionObj::Id(var) => var.clone(),
+                                            ExpressionObj::Move(inner) => match1!(&inner.obj, ExpressionObj::Id(var) => var.clone()),
+                                            _ => panic!("has_one target must be an identifier"),
+                                        };
+
+                                        // The account.has_one() call becomes a no-op in the generated code
+                                        // The actual constraint is via #[account(has_one = target)]
+                                        expr.obj = ExpressionObj::Rendered(quote! { () });
+
+                                        Ok(Transformed::AccountHasOne {
+                                            expr,
+                                            name,
+                                            target,
+                                        })
+                                    })
+                                )
+                            )
+                        )),
+                        "realloc" => Some((
+                            Ty::Anonymous(0),
+                            Ty::new_function(
+                                vec![
+                                    ("size", Ty::prelude(Prelude::RustInt(false, 64), vec![]), ParamType::Required),
+                                    ("payer", Ty::Cast(Ty::prelude(Prelude::Account, vec![]).into()), ParamType::Required),
+                                    ("zero", Ty::python(Python::Bool, vec![]), ParamType::Optional),
+                                ],
+                                Ty::Transformed(
+                                    Ty::python(Python::Tuple, vec![]).into(),
+                                    Transformation::new(|mut expr| {
+                                        let (function, mut args) = match1!(expr.obj, ExpressionObj::Call { function, args, } => (function, args.into_iter()));
+                                        let account = match1!(function.obj, ExpressionObj::Attribute { value, .. } => *value);
+                                        let name = match1!(&account.obj, ExpressionObj::Id(var) => var.clone());
+
+                                        let size = args.next().unwrap();
+                                        let payer_expr = args.next().unwrap();
+                                        let zero = args.next().unwrap().optional();
+
+                                        // Extract identifier from payer (handle Move wrapper)
+                                        let payer = match &payer_expr.obj {
+                                            ExpressionObj::Id(var) => var.clone(),
+                                            ExpressionObj::Move(inner) => match1!(&inner.obj, ExpressionObj::Id(var) => var.clone()),
+                                            _ => panic!("realloc payer must be an identifier"),
+                                        };
+
+                                        // The account.realloc() call becomes a no-op in the generated code
+                                        // The actual realloc happens via the #[account(realloc = ...)] constraint
+                                        expr.obj = ExpressionObj::Rendered(quote! { () });
+
+                                        Ok(Transformed::AccountRealloc {
+                                            expr,
+                                            name,
+                                            size,
+                                            payer,
+                                            zero,
+                                        })
                                     })
                                 )
                             )

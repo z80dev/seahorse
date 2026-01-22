@@ -21,6 +21,9 @@ use super::{namespace::*, sign::*};
 enum Error {
     InvalidDecorator(Ty),
     MisplacedInit,
+    MisplacedRealloc,
+    MisplacedClose,
+    MisplacedHasOne,
     TopLevelNonDirective,
     MisplacedDirective,
     MisplacedCpi,
@@ -34,6 +37,15 @@ impl Error {
             }
             Self::MisplacedInit => {
                 CoreError::make_raw("Empty.inits can only be at the top of an @instruction", "")
+            }
+            Self::MisplacedRealloc => {
+                CoreError::make_raw("account.realloc() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedClose => {
+                CoreError::make_raw("account.close() can only be used inside an @instruction", "")
+            }
+            Self::MisplacedHasOne => {
+                CoreError::make_raw("account.has_one() can only be used inside an @instruction", "")
             }
             Self::TopLevelNonDirective => {
                 CoreError::make_raw("arbitrary expression may not be at the top level of a module", "Hint: the only expressions that can be at the top level of a module are directives, like declare_id.")
@@ -164,6 +176,27 @@ pub enum Transformed {
         expr: TypedExpression,
         name: String,
         annotation: AccountAnnotation,
+    },
+    /// Marks an account to be reallocated
+    AccountRealloc {
+        expr: TypedExpression,
+        name: String,
+        size: TypedExpression,
+        /// Stored as identifier name (e.g., "owner"), not full expression
+        payer: String,
+        zero: Option<TypedExpression>,
+    },
+    /// Marks an account to be closed, with rent returned to the recipient
+    AccountClose {
+        expr: TypedExpression,
+        name: String,
+        recipient: String,
+    },
+    /// Adds a has_one constraint to an account
+    AccountHasOne {
+        expr: TypedExpression,
+        name: String,
+        target: String,  // Just the identifier name, not full expression
     },
     Directive(Directive),
 }
@@ -1001,6 +1034,101 @@ impl Context {
                         Ok(expression)
                     } else {
                         Err(Error::MisplacedInit.core(loc))
+                    }
+                }
+                Transformed::AccountClose {
+                    expr: expression,
+                    name,
+                    recipient,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then set close
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.close = Some(recipient);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedClose.core(loc))
+                    }
+                }
+                Transformed::AccountRealloc {
+                    expr: expression,
+                    name,
+                    size,
+                    payer,
+                    zero,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.realloc = Some(size);
+                            // payer is already extracted as String from check/mod.rs
+                            annotation.realloc_payer = Some(payer);
+                            annotation.realloc_zero = zero;
+                        }
+
+                        // Realloc requires system_program for lamport transfers
+                        ix_context.inferred_accounts.insert(
+                            "system_program".to_string(),
+                            ContextAccount {
+                                account_ty: AccountTyExpr::SystemProgram,
+                                annotation: None,
+                                ty: None,
+                            },
+                        );
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedRealloc.core(loc))
+                    }
+                }
+                Transformed::AccountHasOne {
+                    expr: expression,
+                    name,
+                    target,
+                } => {
+                    if let Some(ix_context) = &mut self.ix_context {
+                        let index = ix_context
+                            .accounts
+                            .iter()
+                            .position(|(name_, ..)| &name == name_)
+                            .unwrap();
+
+                        let account = &mut ix_context.accounts.get_mut(index).unwrap().1;
+
+                        // Initialize annotation if not present, then add has_one
+                        if account.annotation.is_none() {
+                            account.annotation = Some(AccountAnnotation::new());
+                        }
+                        if let Some(ref mut annotation) = account.annotation {
+                            annotation.has_one.push(target);
+                        }
+
+                        Ok(expression)
+                    } else {
+                        Err(Error::MisplacedHasOne.core(loc))
                     }
                 }
                 Transformed::Directive(directive) => {

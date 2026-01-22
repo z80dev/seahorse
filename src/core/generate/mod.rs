@@ -887,6 +887,7 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 is_mut,
                 is_associated,
                 init,
+                init_if_needed,
                 payer,
                 seeds,
                 token_mint,
@@ -895,6 +896,11 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 mint_authority,
                 space,
                 padding,
+                realloc,
+                realloc_payer,
+                realloc_zero,
+                close,
+                has_one,
             },
             ty_expr,
         ) = self;
@@ -905,8 +911,15 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
         if *is_mut {
             params.push(Some(quote! { mut }));
         }
-        if *init {
+        if *init || *init_if_needed {
             let ty_expr = match1!(ty_expr, AccountTyExpr::Empty(ty_expr) => ty_expr);
+            // Choose init or init_if_needed keyword
+            let init_keyword = if *init_if_needed {
+                quote! { init_if_needed }
+            } else {
+                quote! { init }
+            };
+
             if let AccountTyExpr::Defined(name) = &**ty_expr {
                 let ty_expr = StaticPath(name);
 
@@ -919,9 +932,9 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                     (Some(_), Some(_)) => panic!(), // we protect against this in prelude.rs
                 };
 
-                params.push(Some(quote! { init, space = #space }));
+                params.push(Some(quote! { #init_keyword, space = #space }));
             } else {
-                params.push(Some(quote! { init }));
+                params.push(Some(init_keyword));
             }
         }
 
@@ -955,6 +968,33 @@ impl<'a> ToTokens for AccountAnnotationWithTyExpr<'a> {
                 quote! { associated_token::authority = #authority }
             }
         }));
+        params.push(
+            close
+                .as_ref()
+                .map(|recipient| {
+                    let recipient_ident = ident(recipient);
+                    quote! { close = #recipient_ident }
+                }),
+        );
+        params.push(realloc.as_ref().map(|size| quote! { realloc = (#size as usize) }));
+        params.push(
+            realloc_payer
+                .as_ref()
+                .map(|payer| {
+                    let payer_ident = ident(payer);
+                    quote! { realloc::payer = #payer_ident }
+                }),
+        );
+        params.push(
+            realloc_zero
+                .as_ref()
+                .map(|zero| quote! { realloc::zero = #zero }),
+        );
+        // Add has_one constraints - each target becomes `has_one = target`
+        for target in has_one {
+            let target_ident = ident(target);
+            params.push(Some(quote! { has_one = #target_ident }));
+        }
 
         let params = params.into_iter().filter_map(|param| param);
 
@@ -1054,11 +1094,19 @@ impl ToTokens for Statement {
                 }
             }
             Self::Assign { receiver, value } => {
-                let value = Grouped(value);
+                let value_grouped = Grouped(value);
 
                 // TODO maybe can do a normal = assignment if there are no `borrow`s in the rval?
-                quote! {
-                    assign!(#receiver, #value);
+                // Clone Strings to avoid ownership issues when the value is used again later
+                // (e.g., `data.content = s; data.len = len(s)` - the second use would fail without clone)
+                if value.ty.is_string() {
+                    quote! {
+                        assign!(#receiver, #value_grouped.clone());
+                    }
+                } else {
+                    quote! {
+                        assign!(#receiver, #value_grouped);
+                    }
                 }
             }
             Self::Expression(expression) => {

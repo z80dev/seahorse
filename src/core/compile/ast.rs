@@ -189,6 +189,11 @@ pub struct AccountAnnotation {
     pub is_mut: bool,
     pub is_associated: bool,
     pub init: bool,
+    pub init_if_needed: bool,
+    pub realloc: Option<TypedExpression>,
+    /// Stored as identifier name (e.g., "owner"), not full expression
+    pub realloc_payer: Option<String>,
+    pub realloc_zero: Option<TypedExpression>,
     pub payer: Option<TypedExpression>,
     pub seeds: Option<Vec<TypedExpression>>,
     pub mint_decimals: Option<TypedExpression>,
@@ -197,6 +202,12 @@ pub struct AccountAnnotation {
     pub token_authority: Option<TypedExpression>,
     pub space: Option<TypedExpression>,
     pub padding: Option<TypedExpression>,
+    /// The account to receive lamports when this account is closed
+    /// Stored as identifier name (e.g., "owner"), not full expression
+    pub close: Option<String>,
+    /// has_one constraints - enforce account.field == field.key()
+    /// Stores just the identifier names (e.g., "authority") not full expressions
+    pub has_one: Vec<String>,
 }
 
 impl AccountAnnotation {
@@ -205,6 +216,10 @@ impl AccountAnnotation {
             is_mut: true,
             is_associated: false,
             init: false,
+            init_if_needed: false,
+            realloc: None,
+            realloc_payer: None,
+            realloc_zero: None,
             payer: None,
             seeds: None,
             mint_decimals: None,
@@ -213,6 +228,8 @@ impl AccountAnnotation {
             token_authority: None,
             space: None,
             padding: None,
+            close: None,
+            has_one: Vec::new(),
         }
     }
 }
