@@ -126,3 +126,19 @@ path = "events_parity.rs"
 [[test]]
 name = "errors_parity"
 path = "errors_parity.rs"
+
+[[test]]
+name = "has_one_test_parity"
+path = "has_one_test_parity.rs"
+
+[[test]]
+name = "init_if_needed_test_parity"
+path = "init_if_needed_test_parity.rs"
+
+[[test]]
+name = "realloc_test_parity"
+path = "realloc_test_parity.rs"
+
+[[test]]
+name = "close_account_cpi_test_parity"
+path = "close_account_cpi_test_parity.rs"
